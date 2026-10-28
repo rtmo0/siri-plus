@@ -61,6 +61,8 @@ struct PreferencesView: View {
                 Text(verbatim: "Русский").tag("ru-RU")
             }
             Toggle("Recognize my voice too (microphone)", isOn: $model.preferences.capturesMicrophone)
+            Toggle("Save meeting audio (M4A)", isOn: $model.preferences.recordsAudio)
+                .help("The call and your microphone are saved on this Mac as one M4A file with the meeting, about 30–60 MB an hour. Recording a conversation without consent is illegal in many countries: tell the participants.")
             Toggle("Offer to start a meeting when a call begins", isOn: $model.preferences.offersMeetingStart)
             Toggle("Hide Siri+ panels from screen sharing and screenshots", isOn: $model.preferences.hidesPanelsFromCapture)
                 .help("Turn off to take screenshots or record the hint panel. While it is off, people you share your screen with see the hints too.")
@@ -88,6 +90,11 @@ struct PreferencesView: View {
             Toggle("Show message time", isOn: $model.preferences.showTimestamps)
             Toggle("Start dictation with ⌃⌥Space", isOn: $model.preferences.dictatesOnShortcut)
                 .help("The shortcut opens the panel already listening; stop talking and the command is sent.")
+            LabeledContent("Chats and meetings") {
+                Button("Export…", action: exportHistory)
+                    .buttonStyle(.glass)
+                    .help("Save every meeting and chat as Markdown files in a folder you choose")
+            }
         } header: {
             Label("Conversation", systemImage: "text.bubble")
         } footer: {
@@ -274,6 +281,25 @@ struct PreferencesView: View {
             modelPicker($model.preferences.openAIModel, options: ModelOption.openAIAPIModels, defaultTitle: String(localized: "Default (GPT-6.1 Sol)"))
         }
         effortPicker($model.preferences.openAIEffort, levels: openAIEfforts ?? ModelEffort.openAIAPILevels)
+    }
+
+    // MARK: Export
+
+    /// Asks for a folder, writes the history into a new folder inside it and shows it in Finder.
+    private func exportHistory() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.canCreateDirectories = true
+        panel.prompt = String(localized: "Export Here")
+        panel.message = String(localized: "Siri+ creates a folder with every meeting and chat as Markdown files.")
+        guard panel.runModal() == .OK, let directory = panel.url else { return }
+        do {
+            let folder = try model.exportHistory(into: directory)
+            NSWorkspace.shared.activateFileViewerSelecting([folder])
+        } catch {
+            model.errorMessage = String(localized: "The history was not exported. \(error.localizedDescription)")
+        }
     }
 
     // MARK: Building blocks

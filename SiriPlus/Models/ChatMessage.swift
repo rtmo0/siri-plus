@@ -115,6 +115,8 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
     var hintMode: HintMode = .questionsAndTopic
     var transcriptionLocale = systemLocale
     var capturesMicrophone = true
+    /// Saves each meeting's sound as M4A next to its transcript. Off by default: recording needs consent.
+    var recordsAudio = false
     /// Meetings older than this many days are deleted from the history; 0 keeps them forever.
     var historyRetentionDays = 0
     /// Offers to start a meeting when a call app starts recording, and to stop it when the call ends.
@@ -140,6 +142,7 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         hintMode: HintMode = .questionsAndTopic,
         transcriptionLocale: String = systemLocale,
         capturesMicrophone: Bool = true,
+        recordsAudio: Bool = false,
         historyRetentionDays: Int = 0,
         offersMeetingStart: Bool = true,
         hidesPanelsFromCapture: Bool = true,
@@ -159,6 +162,7 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         self.hintMode = hintMode
         self.transcriptionLocale = transcriptionLocale
         self.capturesMicrophone = capturesMicrophone
+        self.recordsAudio = recordsAudio
         self.historyRetentionDays = historyRetentionDays
         self.offersMeetingStart = offersMeetingStart
         self.hidesPanelsFromCapture = hidesPanelsFromCapture
@@ -186,6 +190,7 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         hintMode = (try? container.decodeIfPresent(HintMode.self, forKey: .hintMode)) ?? defaults.hintMode
         transcriptionLocale = try container.decodeIfPresent(String.self, forKey: .transcriptionLocale) ?? defaults.transcriptionLocale
         capturesMicrophone = try container.decodeIfPresent(Bool.self, forKey: .capturesMicrophone) ?? defaults.capturesMicrophone
+        recordsAudio = try container.decodeIfPresent(Bool.self, forKey: .recordsAudio) ?? defaults.recordsAudio
         historyRetentionDays = try container.decodeIfPresent(Int.self, forKey: .historyRetentionDays) ?? defaults.historyRetentionDays
         offersMeetingStart = try container.decodeIfPresent(Bool.self, forKey: .offersMeetingStart) ?? defaults.offersMeetingStart
         hidesPanelsFromCapture = try container.decodeIfPresent(Bool.self, forKey: .hidesPanelsFromCapture) ?? defaults.hidesPanelsFromCapture

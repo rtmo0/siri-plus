@@ -25,9 +25,11 @@ The interface is in English and Russian and follows the system language. Swift 6
 | ✅ | Offers to start listening when a call begins and to stop when it ends | Mac |
 | ✅ | Meeting materials (agenda, names, terms) help recognition and hints | Mac + model |
 | ✅ | Meeting history: title, summary, action items with checkboxes, participants, full transcript | Mac + model |
+| ✅ | Optional call recording to M4A, played back in the history | Mac |
 | ✅ | Ask questions about a past meeting, export it to Markdown | Mac + model |
 | ✅ | Siri-style ask panel on ⌃⌥Space with voice dictation | Mac + model |
 | ✅ | Chat with saved history and search | Mac + model |
+| ✅ | Export chats, meetings or the whole history to Markdown | Mac |
 | ✅ | Attach images, PDFs, text and code files | Mac + model |
 | ✅ | Transcribe audio and video files (MP3, M4A, WAV, AIFF, MP4, MOV…) | Mac |
 | ✅ | Claude: browser sign-in through Claude Code, or an API key | model |
@@ -64,6 +66,8 @@ First launch:
 - **Hints** come after a question from the other side and about every 45 seconds while the conversation moves on, only on questions, or only on request (the Hint button or ⌃⌥Space). The model answers “—” when no hint is needed, and nothing is shown.
 - **Questions** are spotted locally by question words after a short pause, since on-device Russian recognition adds no punctuation.
 - **History.** After Stop, the meeting is saved on your Mac with a title, summary, action items and participants written by the model. The search covers everything, including the transcript. “Ask about meeting” opens a chat that answers from the transcript.
+- **Recording.** Off by default. With “Save meeting audio (M4A)” on, the call and your microphone are saved as one M4A file with the meeting (about 30–60 MB an hour) and play back in the history. The file is deleted with the meeting.
+- **Export.** A meeting or a chat saves as a Markdown file from its toolbar. Settings → Conversation → Export saves the whole history into a folder: `Meetings/` and `Chats/` with one file each (a recorded meeting's M4A next to its Markdown), and `index.md` linking them with dates and the first line of each summary.
 
 Tell participants you use an assistant: recording a conversation without consent is illegal in many countries.
 
@@ -98,8 +102,9 @@ Subscription sign-in is for personal use on your own Mac.
 | Spotting questions | Reading an attached screenshot or image |
 | Sign-in tokens and API keys (Keychain) | Meeting title, participants and summary after Stop |
 | Chats and meeting history (`~/Library/Application Support/SiriPlus/`) | |
+| Meeting audio, if you turn recording on (`Recordings/` in the same folder) | |
 
-Audio is never sent anywhere. The model receives your messages, attachments, and a recent piece of the transcript (up to about 6,000 characters) with the meeting materials when a hint is needed. After Stop, the transcript is sent once more to write the summary.
+Audio is never sent anywhere, recorded or not. The model receives your messages, attachments, and a recent piece of the transcript (up to about 6,000 characters) with the meeting materials when a hint is needed. After Stop, the transcript is sent once more to write the summary.
 
 ## Updates
 

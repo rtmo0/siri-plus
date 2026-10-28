@@ -48,7 +48,10 @@ final class MeetingHistory: ObservableObject {
         let expired = records.filter { $0.endedAt < cutoff }.map(\.id)
         guard !expired.isEmpty else { return }
         records.removeAll { expired.contains($0.id) }
-        for id in expired { summaryFailures[id] = nil }
+        for id in expired {
+            summaryFailures[id] = nil
+            store.removeRecording(for: id)
+        }
         save()
     }
 
@@ -67,9 +70,15 @@ final class MeetingHistory: ObservableObject {
         }
     }
 
+    /// The meeting's sound, if it was recorded.
+    func recording(for id: UUID) -> URL? {
+        store.recording(for: id)
+    }
+
     func delete(_ id: UUID) {
         records.removeAll { $0.id == id }
         summaryFailures[id] = nil
+        store.removeRecording(for: id)
         save()
     }
 

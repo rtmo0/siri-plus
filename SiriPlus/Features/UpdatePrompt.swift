@@ -5,7 +5,8 @@ import SwiftUI
 /// A glass panel under the menu bar offering a new version; it stays while the update installs.
 @MainActor
 final class UpdatePrompt {
-    private static let size = NSSize(width: 440, height: 84)
+    /// The card plus room above and left of it for the close button on its corner.
+    private static let size = NSSize(width: 444, height: 88)
 
     private let updates: UpdateModel
     private var panel: NSPanel?
@@ -29,7 +30,7 @@ final class UpdatePrompt {
         let panel = panel ?? makePanel()
         self.panel = panel
         guard let screen = NSScreen.main?.visibleFrame else { return }
-        panel.setFrameOrigin(NSPoint(x: screen.maxX - Self.size.width - 12, y: screen.maxY - Self.size.height - 8))
+        panel.setFrameOrigin(NSPoint(x: screen.maxX - Self.size.width - 12, y: screen.maxY - Self.size.height - 4))
         panel.alphaValue = 0
         panel.orderFrontRegardless()
         NSAnimationContext.runAnimationGroup { context in
@@ -121,17 +122,12 @@ private struct UpdatePromptView: View {
                 Button("Install") { Task { await updates.install() } }
                     .buttonStyle(.glassProminent)
             }
-            Button { updates.dismissPrompt() } label: { Image(systemName: "xmark") }
-                .buttonStyle(.glass)
-                .buttonBorderShape(.circle)
-                .controlSize(.small)
-                .help("Close")
-                .accessibilityLabel("Close")
         }
         .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        .padding(4)
+        .cornerCloseButton("Close") { updates.dismissPrompt() }
+        .padding(EdgeInsets(top: 8, leading: 8, bottom: 4, trailing: 4))
     }
 
     /// A determinate bar while the size is known, otherwise a moving one.

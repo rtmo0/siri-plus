@@ -1,4 +1,5 @@
 import AppKit
+import AVKit
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -134,6 +135,9 @@ private struct MeetingDetail: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
+                if let recording = history.recording(for: record.id) {
+                    RecordingPlayer(url: recording)
+                }
                 summaryCard
                 if !record.tasks.isEmpty { tasksCard }
                 participantsField
@@ -265,7 +269,15 @@ private struct MeetingDetail: View {
         panel.nameFieldStringValue = record.displayTitle.replacingOccurrences(of: "/", with: "-") + ".md"
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do {
-            try record.markdown(includingTranscript: true).write(to: url, atomically: true, encoding: .utf8)
+            // The recorded sound goes next to the file under the same name, linked from it.
+            var audioName: String?
+            if let audio = history.recording(for: record.id) {
+                let audioURL = url.deletingPathExtension().appendingPathExtension("m4a")
+                try? FileManager.default.removeItem(at: audioURL)
+                try FileManager.default.copyItem(at: audio, to: audioURL)
+                audioName = audioURL.lastPathComponent
+            }
+            try record.markdown(includingTranscript: true, recording: audioName).write(to: url, atomically: true, encoding: .utf8)
         } catch {
             history.errorMessage = String(localized: "The file was not saved. \(error.localizedDescription)")
         }
@@ -279,5 +291,49 @@ private struct MeetingDetail: View {
     private func commitParticipants() {
         guard MeetingSummary.names(in: participants) != record.participants else { return }
         history.setParticipants(record.id, from: participants)
+    }
+}
+
+/// The meeting's recorded sound: play it here or find the M4A file.
+private struct RecordingPlayer: View {
+    let url: URL
+
+    var body: some View {
+        HStack(spacing: 8) {
+            InlinePlayer(url: url)
+                .frame(height: 28)
+            Button("Show in Finder", systemImage: "folder") {
+                NSWorkspace.shared.activateFileViewerSelecting([url])
+            }
+            .labelStyle(.iconOnly)
+            .buttonStyle(.glass)
+            .help("Show the M4A file in Finder")
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .glassEffect(.regular, in: Capsule())
+    }
+}
+
+/// AVKit's compact transport controls for one file.
+private struct InlinePlayer: NSViewRepresentable {
+    let url: URL
+
+    func makeNSView(context: Context) -> AVPlayerView {
+        let view = AVPlayerView()
+        view.controlsStyle = .inline
+        view.showsFullScreenToggleButton = false
+        view.player = AVPlayer(url: url)
+        return view
+    }
+
+    func updateNSView(_ view: AVPlayerView, context: Context) {
+        if (view.player?.currentItem?.asset as? AVURLAsset)?.url != url {
+            view.player = AVPlayer(url: url)
+        }
+    }
+
+    static func dismantleNSView(_ view: AVPlayerView, coordinator: ()) {
+        view.player?.pause()
     }
 }

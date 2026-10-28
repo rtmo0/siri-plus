@@ -50,6 +50,8 @@ struct MeetingConfiguration: Sendable {
     let capturesMicrophone: Bool
     /// Names and terms the recogniser should expect.
     var contextualStrings: [String] = []
+    /// Where to save the meeting's sound as M4A when it stops; nil records nothing.
+    var recordingURL: URL?
 
     /// Words from the meeting materials worth hinting: names, product names, abbreviations, "k8s"-like terms.
     /// Ordinary lowercase words are left out, recognition handles them anyway.
@@ -76,6 +78,8 @@ enum MeetingEvent: Sendable {
     case level(Speaker, Float)
     /// Whether the call plays through speakers, so the microphone hears it; sent at the start and on every change.
     case loudspeaker(Bool)
+    /// The sound could not be saved; the transcript is not affected.
+    case recordingFailed(String)
 }
 
 enum MeetingError: LocalizedError {
@@ -84,6 +88,7 @@ enum MeetingError: LocalizedError {
     case appNotRunning(String)
     case noDisplay
     case noAudioFormat
+    case recordingFailed
 
     var errorDescription: String? {
         switch self {
@@ -97,6 +102,8 @@ enum MeetingError: LocalizedError {
             String(localized: "No display was found for audio capture.")
         case .noAudioFormat:
             String(localized: "The speech recognition model did not report an audio format.")
+        case .recordingFailed:
+            String(localized: "The meeting audio could not be saved.")
         }
     }
 }
@@ -113,6 +120,8 @@ protocol MeetingService: AnyObject {
 @MainActor
 final class LiveMeetingService: MeetingService {
     private var capture: MeetingAudioCapture?
+    private var recorder: MeetingRecorder?
+    private var recordingURL: URL?
     /// Recognisers still listening: every candidate language until a speaker's language is chosen.
     private var channels: [ChannelTranscriber] = []
     private var routes: [Speaker: SpeakerRoute] = [:]
@@ -156,11 +165,16 @@ final class LiveMeetingService: MeetingService {
             }
 
             let routes = self.routes
+            let recorder = try configuration.recordingURL.map { _ in try MeetingRecorder() }
+            self.recorder = recorder
+            recordingURL = configuration.recordingURL
             let meters = Dictionary(uniqueKeysWithValues: speakers.map { ($0, LevelMeter(speaker: $0, continuation: continuation)) })
             let echo = EchoGuard(continuation: continuation)
             let capture = MeetingAudioCapture(
-                onBuffer: { speaker, buffer in
+                onBuffer: { speaker, buffer, time in
                     meters[speaker]?.report(buffer)
+                    // The recording keeps the microphone as it was, before the echo gate.
+                    recorder?.append(buffer, of: speaker, at: time)
                     if speaker == .them {
                         echo.hearThem(buffer)
                     } else if !echo.passesMe(buffer) {
@@ -182,6 +196,15 @@ final class LiveMeetingService: MeetingService {
     func stop() async {
         await capture?.stop()
         capture = nil
+        if let recorder, let recordingURL {
+            do {
+                try await recorder.finish(to: recordingURL)
+            } catch {
+                continuation?.yield(.recordingFailed(error.localizedDescription))
+            }
+        }
+        recorder = nil
+        recordingURL = nil
         // Finalising flushes the text still being recognised before the streams end.
         for channel in channels { await channel.finish() }
         for task in closing { await task.value }
@@ -515,14 +538,14 @@ private final class LevelMeter: @unchecked Sendable {
 /// Captures the meeting app's audio and, optionally, the microphone through one ScreenCaptureKit stream.
 /// Not AVAudioEngine voice processing: it cancels echo, but Teams and Zoom then get silence from the microphone.
 final class MeetingAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate, @unchecked Sendable {
-    private let onBuffer: @Sendable (Speaker, AVAudioPCMBuffer) -> Void
+    private let onBuffer: @Sendable (Speaker, AVAudioPCMBuffer, CMTime) -> Void
     private let onStop: @Sendable (Error) -> Void
     private let audioQueue = DispatchQueue(label: "dev.siriplus.capture.them")
     private let microphoneQueue = DispatchQueue(label: "dev.siriplus.capture.me")
     private let screenQueue = DispatchQueue(label: "dev.siriplus.capture.screen")
     private var stream: SCStream?
 
-    init(onBuffer: @escaping @Sendable (Speaker, AVAudioPCMBuffer) -> Void, onStop: @escaping @Sendable (Error) -> Void) {
+    init(onBuffer: @escaping @Sendable (Speaker, AVAudioPCMBuffer, CMTime) -> Void, onStop: @escaping @Sendable (Error) -> Void) {
         self.onBuffer = onBuffer
         self.onStop = onStop
     }
@@ -581,7 +604,7 @@ final class MeetingAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate, @un
         default: return
         }
         guard sampleBuffer.isValid, let buffer = sampleBuffer.pcmBuffer() else { return }
-        onBuffer(speaker, buffer)
+        onBuffer(speaker, buffer, sampleBuffer.presentationTimeStamp)
     }
 
     func stream(_ stream: SCStream, didStopWithError error: Error) {

@@ -13,7 +13,8 @@ struct MeetingRecord: Identifiable, Codable, Equatable, Sendable {
     let turns: [TranscriptTurn]
     let notes: String
 
-    init(startedAt: Date, endedAt: Date, turns: [TranscriptTurn], notes: String) {
+    init(id: UUID = UUID(), startedAt: Date, endedAt: Date, turns: [TranscriptTurn], notes: String) {
+        self.id = id
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.turns = turns
@@ -56,10 +57,14 @@ struct MeetingRecord: Identifiable, Codable, Equatable, Sendable {
     }
 
     /// The meeting as Markdown, for the clipboard or a file.
-    func markdown(includingTranscript: Bool) -> String {
+    /// - Parameter recording: the file name of the meeting's sound saved next to the Markdown, linked under the date.
+    func markdown(includingTranscript: Bool, recording: String? = nil) -> String {
         let duration = Duration.seconds(endedAt.timeIntervalSince(startedAt))
             .formatted(.units(allowed: [.hours, .minutes], width: .abbreviated))
         var lines = ["# \(displayTitle)", "", "\(startedAt.formatted(date: .long, time: .shortened)) · \(duration)"]
+        if let recording {
+            lines += ["", "**\(String(localized: "Recording")):** [\(recording)](<\(recording)>)"]
+        }
         if !participants.isEmpty {
             lines += ["", "**\(String(localized: "Participants")):** \(participants.joined(separator: ", "))"]
         }
@@ -69,6 +74,10 @@ struct MeetingRecord: Identifiable, Codable, Equatable, Sendable {
         if !tasks.isEmpty {
             lines += ["", "## \(String(localized: "Tasks"))", ""]
             lines += tasks.map { "- [\($0.isDone ? "x" : " ")] \($0.line)" }
+        }
+        let materials = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+        if includingTranscript, !materials.isEmpty {
+            lines += ["", "## \(String(localized: "Materials"))", "", materials]
         }
         if includingTranscript {
             lines += ["", "## \(String(localized: "Transcript"))", ""]

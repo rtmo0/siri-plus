@@ -68,6 +68,8 @@ final class MeetingModel: ObservableObject {
     private let hintService: any HintService
     private let preferences: () -> AssistantPreferences
     private let timing: Timing
+    /// Where a meeting's sound is saved; nil when this model never records.
+    private let recordingURL: ((UUID) -> URL)?
     private var eventsTask: Task<Void, Never>?
     private var questionTask: Task<Void, Never>?
     private var hintTask: Task<Void, Never>?
@@ -81,11 +83,13 @@ final class MeetingModel: ObservableObject {
         service: any MeetingService,
         hintService: any HintService,
         timing: Timing = Timing(),
+        recordingURL: ((UUID) -> URL)? = nil,
         preferences: @escaping () -> AssistantPreferences
     ) {
         self.service = service
         self.hintService = hintService
         self.timing = timing
+        self.recordingURL = recordingURL
         self.preferences = preferences
     }
 
@@ -116,13 +120,17 @@ final class MeetingModel: ObservableObject {
         lastHintAt = Date()
         let startedAt = Date()
         recordingSince = startedAt
+        // The meeting's id is known from the start, so its sound file can be named after it.
+        let id = UUID()
+        let audioURL = settings.recordsAudio ? recordingURL?(id) : nil
 
         do {
             let events = try await service.start(MeetingConfiguration(
                 source: source,
                 locales: settings.speechLocales,
                 capturesMicrophone: settings.capturesMicrophone,
-                contextualStrings: MeetingConfiguration.contextualStrings(from: notes)
+                contextualStrings: MeetingConfiguration.contextualStrings(from: notes),
+                recordingURL: audioURL
             ))
             guard phase == .starting else {
                 await service.stop()
@@ -139,7 +147,7 @@ final class MeetingModel: ObservableObject {
                 }
                 await self?.stop()
                 // The stream ends after stopping flushed the last recognised text, so the transcript is complete here.
-                self?.archive(startedAt: startedAt)
+                self?.archive(id: id, startedAt: startedAt, audioURL: audioURL)
             }
         } catch {
             phase = .idle
@@ -184,16 +192,20 @@ final class MeetingModel: ObservableObject {
             : String(format: "%d:%02d", minutes, secs)
     }
 
-    private func archive(startedAt: Date) {
+    private func archive(id: UUID, startedAt: Date, audioURL: URL?) {
         // A meeting started again before the old stream ended has already replaced the transcript.
-        guard phase == .idle, !transcript.isEmpty else { return }
+        guard phase == .idle, !transcript.isEmpty else {
+            // Nothing is kept for a meeting without words, its sound included.
+            if let audioURL { try? FileManager.default.removeItem(at: audioURL) }
+            return
+        }
         let turns = transcript.turns.map { turn in
             var turn = turn
             turn.finalText = turn.text
             turn.volatileText = ""
             return turn
         }
-        onFinish?(MeetingRecord(startedAt: startedAt, endedAt: Date(), turns: turns, notes: notes))
+        onFinish?(MeetingRecord(id: id, startedAt: startedAt, endedAt: Date(), turns: turns, notes: notes))
     }
 
     private func handle(_ event: MeetingEvent) {
@@ -202,6 +214,8 @@ final class MeetingModel: ObservableObject {
             levels[speaker] = level
         case .loudspeaker(let isLoud):
             playsAloud = isLoud
+        case .recordingFailed(let message):
+            errorMessage = String(localized: "The meeting audio was not saved. \(message)")
         case .segment(let segment):
             guard let turn = transcript.apply(segment), segment.isFinal else { return }
             let mode = preferences().hintMode

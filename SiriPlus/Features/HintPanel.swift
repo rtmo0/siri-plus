@@ -260,6 +260,9 @@ private struct SidePanelView: View {
             }
         }
         .frame(width: HintOverlay.cardWidth, alignment: .topLeading)
+        // The card takes its own height, not the window's: the window follows the card. Fitted into the
+        // window instead, a longer question never grew the panel and its first lines scrolled out of sight.
+        .fixedSize(horizontal: false, vertical: true)
         .background(PanelBackground(isActive: isActive, isDropTargeted: isDropTargeted))
         // Any empty part of the card moves the panel; controls and text keep their own clicks and drags.
         .contentShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
@@ -268,6 +271,8 @@ private struct SidePanelView: View {
             model.attach(urls)
             return !urls.isEmpty
         } isTargeted: { isDropTargeted = $0 }
+        // Outside the card's rounded hit shape, which leaves out the corner the button sits on.
+        .cornerCloseButton("Hide (Esc)") { overlay.hide() }
         .onGeometryChange(for: CGFloat.self, of: \.size.height) { overlay.fit(cardHeight: $0) }
         .padding(.top, HintOverlay.edgeInset)
         .padding(.trailing, HintOverlay.edgeInset)
@@ -319,7 +324,6 @@ private struct SidePanelView: View {
                         toolButton(String(localized: "New Chat"), symbol: "square.and.pencil") { model.newConversation() }
                     }
                     toolButton(String(localized: "Open the Siri+ window"), symbol: "arrow.up.left.and.arrow.down.right") { overlay.openApp() }
-                    toolButton(String(localized: "Hide (Esc)"), symbol: "xmark") { overlay.hide() }
                 }
             }
             .buttonStyle(.glass)
@@ -418,11 +422,6 @@ private struct SidePanelView: View {
             Text("Listening to the meeting")
                 .font(.headline)
             Spacer(minLength: 0)
-            Button { overlay.hide() } label: { Image(systemName: "xmark") }
-                .buttonStyle(.glass)
-                .buttonBorderShape(.circle)
-                .controlSize(.small)
-                .help("Hide (Esc)")
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)

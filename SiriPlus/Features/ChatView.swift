@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ChatView: View {
     @ObservedObject var model: AppModel
@@ -22,6 +23,19 @@ struct ChatView: View {
                     // The app has no main menu (menu bar only), so the shortcut lives on the button.
                     .keyboardShortcut("n", modifiers: .command)
                     .help("New Chat (⌘N)")
+            }
+            if let markdown = model.currentChatMarkdown {
+                ToolbarItem {
+                    Button("Copy the Chat", systemImage: "doc.on.doc") {
+                        NSPasteboard.general.clearContents()
+                        NSPasteboard.general.setString(markdown, forType: .string)
+                    }
+                    .help("Copy the chat as Markdown")
+                }
+                ToolbarItem {
+                    Button("Save as Markdown", systemImage: "square.and.arrow.down") { save(markdown) }
+                        .help("Save the chat as a Markdown file")
+                }
             }
         }
         .onAppear { isComposerFocused = true }
@@ -287,6 +301,20 @@ struct ChatView: View {
         let text = typed.isEmpty && !model.pendingAttachments.isEmpty ? String(localized: "Analyze the attached files.") : typed
         guard model.send(text) != nil else { return }
         model.draft = ""
+    }
+
+    private func save(_ markdown: String) {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "md") ?? .plainText]
+        let first = model.messages.first?.createdAt ?? Date()
+        let title = markdown.split(whereSeparator: \.isNewline).first.map { String($0.dropFirst(2)) } ?? ""
+        panel.nameFieldStringValue = HistoryExport.fileName(first, title) + ".md"
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        do {
+            try markdown.write(to: url, atomically: true, encoding: .utf8)
+        } catch {
+            model.errorMessage = String(localized: "The file was not saved. \(error.localizedDescription)")
+        }
     }
 
     private func chooseFiles() {

@@ -125,6 +125,58 @@
         }
       }
     },
+    "%lld messages": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld message"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld messages"
+                }
+              }
+            }
+          }
+        },
+        "ru": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld сообщение"
+                }
+              },
+              "few": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld сообщения"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld сообщений"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld сообщения"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld%% left": {
       "localizations": {
         "ru": {
@@ -171,6 +223,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ключ API"
+          }
+        }
+      }
+    },
+    "About the meeting": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "По встрече"
           }
         }
       }
@@ -335,6 +397,16 @@
         }
       }
     },
+    "Attached": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вложения"
+          }
+        }
+      }
+    },
     "Audio level: %@": {
       "localizations": {
         "ru": {
@@ -451,6 +523,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Время ожидания входа в ChatGPT истекло."
+          }
+        }
+      }
+    },
+    "Chats": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чаты"
+          }
+        }
+      }
+    },
+    "Chats and meetings": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чаты и встречи"
           }
         }
       }
@@ -651,6 +743,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Диалог"
+          }
+        }
+      }
+    },
+    "Copy the Chat": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скопировать чат"
+          }
+        }
+      }
+    },
+    "Copy the chat as Markdown": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скопировать чат в Markdown"
           }
         }
       }
@@ -871,6 +983,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Объясни, что на экране"
+          }
+        }
+      }
+    },
+    "Export Here": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Экспортировать сюда"
+          }
+        }
+      }
+    },
+    "Exported %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выгружено %@"
+          }
+        }
+      }
+    },
+    "Export…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Экспорт…"
           }
         }
       }
@@ -1225,6 +1367,16 @@
         }
       }
     },
+    "Materials": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Материалы"
+          }
+        }
+      }
+    },
     "Maximum": {
       "localizations": {
         "ru": {
@@ -1301,6 +1453,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Название встречи"
+          }
+        }
+      }
+    },
+    "Meetings": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Встречи"
           }
         }
       }
@@ -1755,6 +1917,16 @@
         }
       }
     },
+    "Recording": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запись"
+          }
+        }
+      }
+    },
     "Refresh": {
       "localizations": {
         "ru": {
@@ -1841,6 +2013,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "Сохранить в Markdown"
+          }
+        }
+      }
+    },
+    "Save every meeting and chat as Markdown files in a folder you choose": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохранить все встречи и чаты файлами Markdown в выбранную папку"
+          }
+        }
+      }
+    },
+    "Save meeting audio (M4A)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохранять звук встречи (M4A)"
+          }
+        }
+      }
+    },
+    "Save the chat as a Markdown file": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохранить чат в файл Markdown"
           }
         }
       }
@@ -1995,12 +2197,32 @@
         }
       }
     },
+    "Show in Finder": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показать в Finder"
+          }
+        }
+      }
+    },
     "Show message time": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Показывать время сообщений"
+          }
+        }
+      }
+    },
+    "Show the M4A file in Finder": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показать файл M4A в Finder"
           }
         }
       }
@@ -2145,12 +2367,42 @@
         }
       }
     },
+    "Siri+ History": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "История Siri+"
+          }
+        }
+      }
+    },
+    "Siri+ History %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "История Siri+ %@"
+          }
+        }
+      }
+    },
     "Siri+ cannot replace itself at %@. Move Siri+ to the Applications folder, or install the update from the disk image.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Siri+ не может обновить себя в %@. Переместите Siri+ в «Программы» или установите обновление из образа диска."
+          }
+        }
+      }
+    },
+    "Siri+ creates a folder with every meeting and chat as Markdown files.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siri+ создаст папку со всеми встречами и чатами в файлах Markdown."
           }
         }
       }
@@ -2415,6 +2667,16 @@
         }
       }
     },
+    "The call and your microphone are saved on this Mac as one M4A file with the meeting, about 30–60 MB an hour. Recording a conversation without consent is illegal in many countries: tell the participants.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Звонок и ваш микрофон сохраняются на этом Mac одним файлом M4A вместе со встречей, примерно 30–60 МБ в час. Во многих странах записывать разговор без согласия незаконно: предупредите участников."
+          }
+        }
+      }
+    },
     "The call in %@ has ended": {
       "localizations": {
         "ru": {
@@ -2475,6 +2737,26 @@
         }
       }
     },
+    "The history is empty.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "История пуста."
+          }
+        }
+      }
+    },
+    "The history was not exported. %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "История не выгружена. %@"
+          }
+        }
+      }
+    },
     "The key was not deleted. %@": {
       "localizations": {
         "ru": {
@@ -2491,6 +2773,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ключ не сохранён. %@"
+          }
+        }
+      }
+    },
+    "The meeting audio could not be saved.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось сохранить звук встречи."
+          }
+        }
+      }
+    },
+    "The meeting audio was not saved. %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Звук встречи не сохранён. %@"
           }
         }
       }

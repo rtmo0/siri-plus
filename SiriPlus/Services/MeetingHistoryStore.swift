@@ -18,6 +18,21 @@ struct MeetingHistoryStore: Sendable {
         try JSONEncoder().encode(records).write(to: url, options: .atomic)
     }
 
+    /// Where a meeting's sound is saved, next to the history: "Recordings/<meeting id>.m4a".
+    func recordingURL(for id: UUID) -> URL {
+        url.deletingLastPathComponent().appending(path: "Recordings/\(id.uuidString).m4a")
+    }
+
+    /// The meeting's sound file, if it was recorded.
+    func recording(for id: UUID) -> URL? {
+        let url = recordingURL(for: id)
+        return FileManager.default.fileExists(atPath: url.path) ? url : nil
+    }
+
+    func removeRecording(for id: UUID) {
+        try? FileManager.default.removeItem(at: recordingURL(for: id))
+    }
+
     /// Moves an unreadable file out of the way so the next save does not overwrite it.
     func setAside() throws -> URL {
         let backup = url.deletingLastPathComponent()

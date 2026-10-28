@@ -158,7 +158,7 @@ final class AppModel: ObservableObject {
         self.preferences = preferences
         PanelCapture.isHidden = preferences.hidesPanelsFromCapture
         var currentPreferences: () -> AssistantPreferences = { preferences }
-        meeting = MeetingModel(service: meetingService, hintService: assistant, timing: meetingTiming) {
+        meeting = MeetingModel(service: meetingService, hintService: assistant, timing: meetingTiming, recordingURL: historyStore.recordingURL(for:)) {
             currentPreferences()
         }
         history = MeetingHistory(store: historyStore, summaries: assistant) { currentPreferences() }
@@ -339,6 +339,21 @@ final class AppModel: ObservableObject {
         captureID = nil
         isCapturing = false
         snapshot = nil
+    }
+
+    // MARK: Export
+
+    /// The chat on screen as Markdown; nil when it has no messages yet.
+    var currentChatMarkdown: String? {
+        guard !messages.isEmpty else { return nil }
+        var conversation = currentChatID.flatMap(chats.conversation) ?? ChatConversation()
+        conversation.messages = messages
+        return conversation.markdown(meetingTitle: chatMeeting?.displayTitle)
+    }
+
+    /// Writes every meeting and chat as Markdown into a new folder inside `directory`.
+    func exportHistory(into directory: URL) throws -> URL {
+        try HistoryExport.write(meetings: history.records, chats: chats.conversations, into: directory, recording: history.recording(for:))
     }
 
     // MARK: Accounts

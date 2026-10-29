@@ -5,6 +5,7 @@ struct PreferencesView: View {
     @ObservedObject var model: AppModel
     @Environment(\.scenePhase) private var scenePhase
     @State private var apiKey = ""
+    @State private var confirmsClaudeSignOut = false
 
     var body: some View {
         Form {
@@ -202,11 +203,21 @@ struct PreferencesView: View {
                     accountLabel(String(localized: "Claude Code"), detail: String(localized: "Not installed"), ok: false)
                 }
             } else if status.signedIn {
-                accountLabel(
-                    status.account ?? "Claude",
-                    detail: status.subscription.map { $0.capitalized } ?? String(localized: "Requests use your Claude subscription limits through Claude Code."),
-                    ok: true
-                )
+                LabeledContent {
+                    Button("Sign Out", role: .destructive) { confirmsClaudeSignOut = true }
+                        .buttonStyle(.glass)
+                        .confirmationDialog("Sign out of Claude Code?", isPresented: $confirmsClaudeSignOut) {
+                            Button("Sign Out", role: .destructive) { Task { await model.signOutOfClaude() } }
+                        } message: {
+                            Text("Siri+ uses Claude Code’s sign-in, so Claude Code in Terminal is signed out too.")
+                        }
+                } label: {
+                    accountLabel(
+                        status.account ?? "Claude",
+                        detail: status.subscription.map { $0.capitalized } ?? String(localized: "Requests use your Claude subscription limits through Claude Code."),
+                        ok: true
+                    )
+                }
                 UsageView(usage: model.usage.claude, error: model.usage.claudeError, isRefreshing: model.usage.isRefreshing) {
                     Task { await model.refreshUsage() }
                 }

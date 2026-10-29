@@ -88,6 +88,13 @@ struct ClaudeCodeBackend: ModelBackend {
         guard NSWorkspace.shared.open(script) else { throw ClaudeCodeError.failed(String(localized: "Could not open Terminal.")) }
     }
 
+    /// Runs `claude auth logout`. Claude Code keeps one sign-in, so this also signs out its own terminal sessions.
+    static func signOut() async throws {
+        guard let executable = await locate() else { throw ClaudeCodeError.notInstalled }
+        let result = await runCommand(executable, ["auth", "logout"])
+        guard result.status == 0 else { throw ClaudeCodeError.failed(String(localized: "Claude Code did not sign out.")) }
+    }
+
     /// Subscription limits from Claude Code's `/usage` report; it sends no request to the model.
     static func usage() async throws -> AccountUsage {
         guard let executable = await locate() else { throw ClaudeCodeError.notInstalled }

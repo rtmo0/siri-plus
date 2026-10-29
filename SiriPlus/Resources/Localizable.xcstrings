@@ -697,6 +697,16 @@
         }
       }
     },
+    "Claude Code did not sign out.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claude Code не удалось выйти из аккаунта."
+          }
+        }
+      }
+    },
     "Claude Code is not installed. Install it from code.claude.com, then sign in in Settings.": {
       "localizations": {
         "ru": {
@@ -2297,6 +2307,16 @@
         }
       }
     },
+    "Sign out of Claude Code?": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выйти из Claude Code?"
+          }
+        }
+      }
+    },
     "Sign-in": {
       "localizations": {
         "ru": {
@@ -2443,6 +2463,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Siri+ нужен доступ к звуку экрана"
+          }
+        }
+      }
+    },
+    "Siri+ uses Claude Code’s sign-in, so Claude Code in Terminal is signed out too.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siri+ использует вход Claude Code, поэтому Claude Code в Терминале тоже выйдет из аккаунта."
           }
         }
       }

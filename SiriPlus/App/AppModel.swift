@@ -69,6 +69,7 @@ struct Credentials {
     var openAIKey: any SecretStoring = KeychainStore(account: "openai-api-key")
     var chatGPT = ChatGPTAccount()
     var claudeCodeStatus: @Sendable () async -> ClaudeCodeStatus = { await ClaudeCodeBackend.status() }
+    var claudeCodeSignOut: @Sendable () async throws -> Void = { try await ClaudeCodeBackend.signOut() }
     var claudeUsage: @Sendable () async throws -> AccountUsage = { try await ClaudeCodeBackend.usage() }
     var claudeCodeModels: @Sendable () async throws -> [ModelOption] = { try await ClaudeCodeBackend.models() }
     var claudeAPIModels: @Sendable (String) async throws -> [ModelOption] = { try await ClaudeClient(apiKey: $0).models() }
@@ -437,6 +438,16 @@ final class AppModel: ObservableObject {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    func signOutOfClaude() async {
+        do {
+            try await credentials.claudeCodeSignOut()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        accounts.claudeCode = await credentials.claudeCodeStatus()
+        accounts.claudeCodeModels = []
     }
 
     func signInToChatGPT() async {

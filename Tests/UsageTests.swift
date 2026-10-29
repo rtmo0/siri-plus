@@ -93,9 +93,10 @@ struct UsageModelTests {
     }
 }
 
-private final class Flag: @unchecked Sendable {
+final class Flag: @unchecked Sendable {
     private let lock = NSLock()
-    private var stored = false
+    private var stored: Bool
+    init(_ value: Bool = false) { stored = value }
     var value: Bool {
         get { lock.withLock { stored } }
         set { lock.withLock { stored = newValue } }

@@ -163,6 +163,21 @@ struct AppModelTests {
         #expect(model.accounts.chatGPTEmail == nil)
     }
 
+    @Test func claudeSignOutRunsClaudeCodeLogout() async {
+        let signedIn = Flag(true)
+        var credentials = Credentials.inMemory()
+        credentials.claudeCodeStatus = { ClaudeCodeStatus(installed: true, signedIn: signedIn.value, account: "me@example.com") }
+        credentials.claudeCodeSignOut = { signedIn.value = false }
+        let model = makeModel(credentials: credentials)
+        await model.refreshAccounts()
+        #expect(model.isModelReady)
+
+        await model.signOutOfClaude()
+        #expect(!model.accounts.claudeCode.signedIn)
+        #expect(model.accounts.claudeCodeModels.isEmpty)
+        #expect(!model.isModelReady)
+    }
+
     @Test func preferencesPersistAndCorruptDataFallsBack() throws {
         let suite = "dev.siriplus.tests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suite))
@@ -296,6 +311,7 @@ extension Credentials {
             openAIKey: MemorySecretStore(),
             chatGPT: ChatGPTAccount(store: MemorySecretStore()),
             claudeCodeStatus: { ClaudeCodeStatus() },
+            claudeCodeSignOut: {},
             claudeUsage: { throw ClaudeCodeError.notInstalled },
             claudeCodeModels: { throw ClaudeCodeError.notInstalled },
             claudeAPIModels: { _ in throw ClaudeError.missingAPIKey }

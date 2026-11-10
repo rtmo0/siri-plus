@@ -5,12 +5,15 @@ struct PreferencesView: View {
     @ObservedObject var model: AppModel
     @Environment(\.scenePhase) private var scenePhase
     @State private var apiKey = ""
+    @State private var serverAddress = ""
+    @State private var serverName = ""
     @State private var confirmsClaudeSignOut = false
 
     var body: some View {
         Form {
             modelSection
             usageSection
+            hintModelSection
             meetingSection
             conversationSection
             accessSection
@@ -26,7 +29,11 @@ struct PreferencesView: View {
                 Task { await model.refreshAccounts() }
             }
         }
-        .onChange(of: model.preferences.selection.route) { apiKey = "" }
+        .onChange(of: model.preferences.selection.route) {
+            apiKey = ""
+            serverAddress = ""
+            serverName = ""
+        }
     }
 
     // MARK: Sections
@@ -52,25 +59,37 @@ struct PreferencesView: View {
                 }
             case .deepSeek:
                 keyField(for: .deepSeek, prompt: "sk-…", link: URL(string: "https://platform.deepseek.com/api_keys")!)
+            case .custom:
+                customServerRows
             }
             let choice = modelChoice
-            modelPicker(choice.model, options: choice.options, defaultTitle: choice.defaultTitle)
-            effortPicker(choice.effort, levels: choice.efforts)
+            if model.preferences.provider == .custom, choice.options.isEmpty {
+                TextField("Model", text: $model.preferences.customModel, prompt: Text(verbatim: "llama3.2"))
+                    .help("The model name as the server knows it")
+            } else {
+                modelPicker(choice.model, options: choice.options, defaultTitle: choice.defaultTitle)
+            }
+            if model.preferences.provider != .custom {
+                effortPicker(choice.effort, levels: choice.efforts)
+            }
         } header: {
             Label("Model", systemImage: "sparkles")
         } footer: {
             VStack(alignment: .leading, spacing: 4) {
-                footnote("Automatic effort: brief answers think briefly, detailed ones longer. Meeting hints always think briefly so they arrive in seconds.")
+                if model.preferences.provider != .custom {
+                    footnote("Automatic effort: brief answers think briefly, detailed ones longer.")
+                }
                 footnote("Only your messages, a screenshot you take, and the latest part of the meeting transcript (when a hint is needed) go to the cloud.")
             }
         }
     }
 
-    /// Subscription limits of a signed-in account, or the balance and token counts of a DeepSeek key.
+    /// Subscription limits of a signed-in account, or the requests and tokens of a key or a server.
     @ViewBuilder
     private var usageSection: some View {
+        let accounts = model.accounts
         switch model.preferences.selection.route {
-        case .claudeCode where model.accounts.claudeCode.signedIn:
+        case .claudeCode where accounts.claudeCode.signedIn:
             Section {
                 UsageView(usage: model.usage.claude, error: model.usage.claudeError, isRefreshing: model.usage.isRefreshing) {
                     Task { await model.refreshUsage() }
@@ -78,7 +97,7 @@ struct PreferencesView: View {
             } header: {
                 Label("Usage Limits", systemImage: "gauge.with.dots.needle.50percent")
             }
-        case .chatGPT where model.accounts.chatGPTEmail != nil:
+        case .chatGPT where accounts.chatGPTEmail != nil:
             Section {
                 UsageView(usage: model.usage.chatGPT, error: model.usage.chatGPTError, isRefreshing: model.usage.isRefreshing) {
                     Task { await model.refreshUsage() }
@@ -86,17 +105,79 @@ struct PreferencesView: View {
             } header: {
                 Label("Usage Limits", systemImage: "gauge.with.dots.needle.50percent")
             }
-        case .deepSeek where model.accounts.hasKey(.deepSeek):
+        case .claudeAPI where accounts.hasKey(.claude),
+             .openAIAPI where accounts.hasKey(.openAI),
+             .deepSeek where accounts.hasKey(.deepSeek),
+             .custom where accounts.hasKey(.custom):
+            let provider = model.preferences.provider
             Section {
-                DeepSeekUsageView(usage: model.deepSeek)
+                APIUsageView(usage: model.apiUsage, provider: provider)
             } header: {
-                Label("Balance and Usage", systemImage: "chart.bar")
+                Label(provider == .deepSeek ? "Balance and Usage" : "Usage", systemImage: "chart.bar")
             } footer: {
-                footnote("The balance comes from DeepSeek. Requests and tokens are counted on this Mac from DeepSeek’s replies; the cost is an estimate at list prices, with off-peak hours at half price.")
+                switch provider {
+                case .deepSeek:
+                    footnote("The balance comes from DeepSeek. Requests and tokens are counted on this Mac from DeepSeek’s replies; the cost is an estimate at list prices, with off-peak hours at half price.")
+                case .claude:
+                    footnote("Requests and tokens are counted on this Mac from Claude’s replies; the cost is an estimate at Anthropic’s list prices.")
+                case .openAI, .custom:
+                    footnote("Requests and tokens are counted on this Mac from the replies.")
+                }
             }
         default:
             EmptyView()
         }
+    }
+
+    /// A faster model for live hints, apart from the one that answers chats and writes summaries.
+    private var hintModelSection: some View {
+        Section {
+            Toggle("Separate model for hints", isOn: Binding(
+                get: { model.preferences.hintModel != nil },
+                set: { model.preferences.hintModel = $0 ? HintModelChoice(provider: model.preferences.provider) : nil }
+            ))
+            if let hint = model.preferences.hintModel {
+                Picker("Provider", selection: hintBinding(\.provider, default: hint.provider)) {
+                    ForEach(AIProvider.allCases) { provider in
+                        Text(verbatim: model.preferences.providerName(provider)).tag(provider)
+                    }
+                }
+                let route = model.preferences.hintSelection.route
+                let models = routeModels(route)
+                let chosen = hint.model.isEmpty ? model.preferences.hintSelection.model : hint.model
+                modelPicker(hintBinding(\.model, default: ""), options: models.options, defaultTitle: String(localized: "Same as above"))
+                if hint.provider != .custom {
+                    effortPicker(hintBinding(\.effort, default: ModelEffort.automatic), levels: efforts(of: chosen, in: route, models: models),
+                                 automaticTitle: String(localized: "Automatic (brief)"))
+                }
+                if !model.isHintModelReady {
+                    Label("\(model.preferences.providerName(hint.provider)) is not connected: choose it under Model above to sign in or add a key, then switch back.", systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+            }
+        } header: {
+            Label("Model for Meeting Hints", systemImage: "bolt")
+        } footer: {
+            footnote("Hints have to arrive within seconds: a fast model with little or no thinking works best, such as Claude Haiku or DeepSeek Flash without thinking. Chats and meeting summaries keep the model above.")
+        }
+    }
+
+    /// A field of the hint model choice; changing the provider starts from that provider's model above.
+    private func hintBinding<Value>(_ keyPath: WritableKeyPath<HintModelChoice, Value>, default value: Value) -> Binding<Value> {
+        Binding(
+            get: { model.preferences.hintModel?[keyPath: keyPath] ?? value },
+            set: { newValue in
+                guard var hint = model.preferences.hintModel else { return }
+                let providerChanged = (keyPath as AnyKeyPath) == (\HintModelChoice.provider as AnyKeyPath)
+                hint[keyPath: keyPath] = newValue
+                if providerChanged {
+                    hint.model = ""
+                    hint.effort = ModelEffort.automatic
+                }
+                model.preferences.hintModel = hint
+            }
+        )
     }
 
     private var meetingSection: some View {
@@ -298,37 +379,140 @@ struct PreferencesView: View {
         }
     }
 
-    /// The models and effort levels of the way of reaching a model chosen above.
+    /// The models a way of reaching a model offers.
+    private struct RouteModels {
+        let options: [ModelOption]
+        /// The title of the empty model ID, for providers that pick a default themselves.
+        var defaultTitle: String?
+        /// Effort levels while the model's own are unknown.
+        let usualEfforts: [String]
+    }
+
+    private func routeModels(_ route: ModelCatalog.Route) -> RouteModels {
+        let accounts = model.accounts
+        return switch route {
+        case .claudeCode: RouteModels(options: accounts.claudeCodeModels.nonEmpty ?? ModelOption.claudeCodeDefaults, usualEfforts: ModelEffort.claudeLevels)
+        case .claudeAPI: RouteModels(options: accounts.claudeAPIModels.nonEmpty ?? ModelOption.claudeAPIDefaults, usualEfforts: ModelEffort.claudeLevels)
+        case .chatGPT: RouteModels(options: accounts.chatGPTModels, defaultTitle: String(localized: "Account default"), usualEfforts: ModelEffort.openAIAPILevels)
+        case .openAIAPI: RouteModels(options: ModelOption.openAIAPIModels, defaultTitle: String(localized: "Default (GPT-6.1 Sol)"), usualEfforts: ModelEffort.openAIAPILevels)
+        case .deepSeek: RouteModels(options: accounts.deepSeekModels.nonEmpty ?? ModelOption.deepSeekModels, usualEfforts: ModelEffort.deepSeekLevels)
+        case .custom: RouteModels(options: accounts.customModels, defaultTitle: accounts.customModels.isEmpty ? nil : String(localized: "First listed model"), usualEfforts: [])
+        }
+    }
+
+    /// Effort levels of a model; an empty ID is the provider's default (the first model a ChatGPT account lists).
+    private func efforts(of chosen: String, in route: ModelCatalog.Route, models: RouteModels) -> [String] {
+        let id = chosen.isEmpty ? (route == .openAIAPI ? ModelOption.openAIAPIDefault.id : models.options.first?.id) : chosen
+        return models.options.first { $0.id == id }?.efforts ?? models.usualEfforts
+    }
+
+    /// The model and effort of the way of reaching a model chosen above.
     private struct ModelChoice {
         let model: Binding<String>
         let effort: Binding<String>
         let options: [ModelOption]
-        /// The title of the empty model ID, for providers that pick a default themselves.
         var defaultTitle: String?
-        /// Levels of the chosen model; the provider's usual levels until its list is loaded.
         let efforts: [String]
     }
 
     private var modelChoice: ModelChoice {
-        let accounts = model.accounts
         let route = model.preferences.selection.route
-        let (selection, effort, options, defaultTitle, usual): (Binding<String>, Binding<String>, [ModelOption], String?, [String]) = switch route {
-        case .claudeCode:
-            ($model.preferences.claudeModel, $model.preferences.claudeEffort, accounts.claudeCodeModels.nonEmpty ?? ModelOption.claudeCodeDefaults, nil, ModelEffort.claudeLevels)
-        case .claudeAPI:
-            ($model.preferences.claudeAPIModel, $model.preferences.claudeEffort, accounts.claudeAPIModels.nonEmpty ?? ModelOption.claudeAPIDefaults, nil, ModelEffort.claudeLevels)
-        case .chatGPT:
-            ($model.preferences.openAIModel, $model.preferences.openAIEffort, accounts.chatGPTModels, String(localized: "Account default"), ModelEffort.openAIAPILevels)
-        case .openAIAPI:
-            ($model.preferences.openAIModel, $model.preferences.openAIEffort, ModelOption.openAIAPIModels, String(localized: "Default (GPT-6.1 Sol)"), ModelEffort.openAIAPILevels)
-        case .deepSeek:
-            ($model.preferences.deepSeekModel, $model.preferences.deepSeekEffort, accounts.deepSeekModels.nonEmpty ?? ModelOption.deepSeekModels, nil, ModelEffort.deepSeekLevels)
+        let (selection, effort): (Binding<String>, Binding<String>) = switch route {
+        case .claudeCode: ($model.preferences.claudeModel, $model.preferences.claudeEffort)
+        case .claudeAPI: ($model.preferences.claudeAPIModel, $model.preferences.claudeEffort)
+        case .chatGPT, .openAIAPI: ($model.preferences.openAIModel, $model.preferences.openAIEffort)
+        case .deepSeek: ($model.preferences.deepSeekModel, $model.preferences.deepSeekEffort)
+        case .custom: ($model.preferences.customModel, .constant(ModelEffort.automatic))
         }
-        // An empty model is the provider's default: the first model a ChatGPT account lists.
-        let chosen = selection.wrappedValue
-        let id = chosen.isEmpty ? (route == .openAIAPI ? ModelOption.openAIAPIDefault.id : options.first?.id) : chosen
-        let efforts = options.first { $0.id == id }?.efforts ?? usual
-        return ModelChoice(model: selection, effort: effort, options: options, defaultTitle: defaultTitle, efforts: efforts)
+        let models = routeModels(route)
+        return ModelChoice(model: selection, effort: effort, options: models.options, defaultTitle: models.defaultTitle,
+                           efforts: efforts(of: selection.wrappedValue, in: route, models: models))
+    }
+
+    // MARK: Other provider
+
+    /// Ready-made addresses of common OpenAI-compatible servers.
+    private static let serverPresets: [(name: String, address: String)] = [
+        ("Ollama", "http://localhost:11434/v1"),
+        ("LM Studio", "http://localhost:1234/v1"),
+        ("OpenRouter", "https://openrouter.ai/api/v1"),
+        ("Groq", "https://api.groq.com/openai/v1"),
+    ]
+
+    @ViewBuilder
+    private var customServerRows: some View {
+        if let status = model.accounts.keys[.custom] {
+            LabeledContent {
+                HStack(spacing: 8) {
+                    if status == .checking {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Button("Check") { Task { await model.checkSavedKey(.custom) } }
+                            .buttonStyle(.glass)
+                            .help("Check that the server answers and list its models again")
+                    }
+                    Button("Disconnect", role: .destructive) { model.deleteAPIKey(for: .custom) }
+                        .buttonStyle(.glass)
+                }
+            } label: {
+                keyLabel(status, title: model.preferences.providerName(.custom), working: model.preferences.customBaseURL)
+            }
+        } else {
+            let isChecking = model.checkingNewKey == .custom
+            let canConnect = !serverAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && model.checkingNewKey == nil
+            let connect = {
+                guard canConnect else { return }
+                Task {
+                    await model.connectCustomServer(address: serverAddress, name: serverName, key: apiKey)
+                    if model.accounts.hasKey(.custom) { serverAddress = ""; serverName = ""; apiKey = "" }
+                }
+            }
+            LabeledContent {
+                HStack(spacing: 8) {
+                    TextField("Server address", text: $serverAddress, prompt: Text(verbatim: "http://localhost:11434/v1"))
+                        .labelsHidden()
+                        .frame(minWidth: 200)
+                        .onSubmit(connect)
+                    Menu("Presets") {
+                        ForEach(Self.serverPresets, id: \.name) { preset in
+                            Button(preset.name) {
+                                serverAddress = preset.address
+                                serverName = preset.name
+                            }
+                        }
+                    }
+                    .fixedSize()
+                }
+            } label: {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Server")
+                    Text("Any OpenAI-compatible API: Ollama, LM Studio, OpenRouter, Groq…")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            TextField("Name", text: $serverName, prompt: Text("Shown in the status line"))
+            LabeledContent("API key") {
+                HStack(spacing: 8) {
+                    SecureField("API key", text: $apiKey, prompt: Text("Not needed for a local server"))
+                        .labelsHidden()
+                        .frame(minWidth: 200)
+                        .disabled(isChecking)
+                        .onSubmit(connect)
+                    if isChecking {
+                        ProgressView().controlSize(.small)
+                    }
+                    Button(isChecking ? "Checking…" : "Check and Connect", action: connect)
+                        .buttonStyle(.glassProminent)
+                        .disabled(!canConnect)
+                }
+            }
+            if let error = model.newKeyErrors[.custom] {
+                Label(error, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+        }
     }
 
     // MARK: Export
@@ -376,7 +560,7 @@ struct PreferencesView: View {
 
     /// The effort levels the chosen model accepts; a model without effort gets none.
     @ViewBuilder
-    private func effortPicker(_ selection: Binding<String>, levels: [String]) -> some View {
+    private func effortPicker(_ selection: Binding<String>, levels: [String], automaticTitle: String = ModelEffort.title(ModelEffort.automatic)) -> some View {
         if levels.isEmpty {
             LabeledContent("Effort") {
                 Text("This model has no effort setting").foregroundStyle(.secondary)
@@ -384,7 +568,7 @@ struct PreferencesView: View {
         } else {
             let chosen = selection.wrappedValue
             Picker("Effort", selection: selection) {
-                Text(ModelEffort.title(ModelEffort.automatic)).tag(ModelEffort.automatic)
+                Text(verbatim: automaticTitle).tag(ModelEffort.automatic)
                 ForEach(levels, id: \.self) { level in
                     Text(ModelEffort.title(level)).tag(level)
                 }
@@ -468,7 +652,7 @@ struct PreferencesView: View {
                         .buttonStyle(.glass)
                 }
             } label: {
-                keyLabel(status, provider: provider)
+                keyLabel(status, title: String(localized: "\(provider.title) API key"))
             }
         } else {
             let isChecking = model.checkingNewKey == provider
@@ -508,15 +692,15 @@ struct PreferencesView: View {
         }
     }
 
-    private func keyLabel(_ status: KeyStatus, provider: AIProvider) -> some View {
-        let title = String(localized: "\(provider.title) API key")
-        return switch status {
+    /// - Parameter working: what to say once the check passed; "Saved in the keychain and working" when nil.
+    private func keyLabel(_ status: KeyStatus, title: String, working: String? = nil) -> some View {
+        switch status {
         case .unchecked:
-            accountLabel(title, detail: String(localized: "Saved in the keychain"), state: .ok)
+            accountLabel(title, detail: working ?? String(localized: "Saved in the keychain"), state: .ok)
         case .checking:
-            accountLabel(title, detail: String(localized: "Checking the key…"), state: .progress)
+            accountLabel(title, detail: String(localized: "Checking…"), state: .progress)
         case .valid:
-            accountLabel(title, detail: String(localized: "Saved in the keychain and working"), state: .ok)
+            accountLabel(title, detail: working ?? String(localized: "Saved in the keychain and working"), state: .ok)
         case .rejected(let message):
             accountLabel(title, detail: message, state: .warning)
         case .unverified(let message):

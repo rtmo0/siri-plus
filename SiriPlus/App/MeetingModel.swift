@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import Foundation
 
@@ -60,6 +61,8 @@ final class MeetingModel: ObservableObject {
     @Published private(set) var sources: [MeetingAudioSource] = [.system]
     @Published var selectedSourceID = MeetingAudioSource.system.id
     @Published var notes = ""
+    /// Files whose text is still being read into the notes.
+    @Published private(set) var readingMaterials: [String] = []
     @Published var errorMessage: String?
     /// Receives every finished meeting that has a transcript.
     var onFinish: ((MeetingRecord) -> Void)?
@@ -94,6 +97,45 @@ final class MeetingModel: ObservableObject {
     }
 
     var isRunning: Bool { phase == .running }
+
+    // MARK: Materials
+
+    /// Reads dropped, chosen or pasted files on this Mac and adds their text to the meeting notes.
+    func addMaterials(_ urls: [URL]) {
+        for url in urls {
+            readMaterial(named: url.lastPathComponent) { locales in try await MaterialReader.text(from: url, locales: locales) }
+        }
+    }
+
+    /// Adds what ⌘V brought into the notes: copied files, or the text on a copied picture.
+    func addMaterial(_ pasted: PastedContent) {
+        switch pasted {
+        case .files(let urls):
+            addMaterials(urls)
+        case .image(let image):
+            let name = String(localized: "Pasted image")
+            guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+                errorMessage = AttachmentError.unreadable(name).localizedDescription
+                return
+            }
+            readMaterial(named: name) { locales in try await MaterialReader.text(from: cgImage, name: name, locales: locales) }
+        }
+    }
+
+    private func readMaterial(named name: String, read: @escaping @Sendable ([Locale]) async throws -> String) {
+        readingMaterials.append(name)
+        let locales = preferences().speechLocales
+        Task {
+            do {
+                let block = MaterialReader.block(name: name, text: try await read(locales))
+                let current = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+                notes = current.isEmpty ? block : current + "\n\n" + block
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            if let index = readingMaterials.firstIndex(of: name) { readingMaterials.remove(at: index) }
+        }
+    }
     var latestHint: MeetingHint? { hints.last { !$0.isEmptyAnswer || $0.failure != nil } }
     var isHinting: Bool { activeHintID != nil }
 
@@ -273,7 +315,7 @@ final class MeetingModel: ObservableObject {
             transcript: transcript.recentText(characterLimit: 6_000),
             notes: notes,
             previousHints: hints.filter { !$0.isEmptyAnswer && $0.failure == nil }.suffix(3).map(\.text),
-            selection: settings.selection
+            selection: settings.hintSelection
         )
         let hint = MeetingHint(id: UUID(), kind: kind, question: question, createdAt: Date())
         hints.append(hint)

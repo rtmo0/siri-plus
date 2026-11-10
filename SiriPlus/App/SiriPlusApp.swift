@@ -115,16 +115,10 @@ private struct AssistantMenu: View {
         }
         Divider()
         if model.isModelReady {
-            Text("\(model.preferences.provider.title) connected")
-            if let usage = model.usage.usage(for: model.preferences.selection) {
-                ForEach(usage.limits) { Text($0.summary) }
-            } else if model.preferences.provider == .deepSeek, let balance = model.deepSeek.balance {
-                Text("Balance: \(balance.formatted)")
-            }
+            Text("\(model.providerName) connected")
         } else {
             Text("Sign-in required")
         }
-        Button("Check for Updates…") { afterMenuCloses { Task { await model.updates.check(userInitiated: true) } } }
         Button("Settings…") {
             afterMenuCloses {
                 model.selectedTab = .settings
@@ -132,6 +126,8 @@ private struct AssistantMenu: View {
             }
         }
         Divider()
+        Button("Check for Updates…") { afterMenuCloses { Task { await model.updates.check(userInitiated: true) } } }
+        Button("About Siri+") { afterMenuCloses { AboutPanel.show(version: model.updates.currentVersionText) } }
         Button("Quit Siri+") { NSApplication.shared.terminate(nil) }
             .keyboardShortcut("q")
     }

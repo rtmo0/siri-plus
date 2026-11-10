@@ -173,11 +173,11 @@ struct AppModelTests {
         #expect(try store.read() == "sk-good")
         #expect(model.accounts.keys[.deepSeek] == .valid)
         #expect(model.newKeyErrors[.deepSeek] == nil)
-        #expect(model.deepSeek.balance?.formatted(locale: Locale(identifier: "en_US")) == "$4.20")
+        #expect(model.apiUsage.balance?.formatted(locale: Locale(identifier: "en_US")) == "$4.20")
         #expect(model.isModelReady)
 
         model.deleteAPIKey(for: .deepSeek)
-        #expect(model.deepSeek.balance == nil)
+        #expect(model.apiUsage.balance == nil)
         #expect(!model.isModelReady)
     }
 
@@ -221,6 +221,56 @@ struct AppModelTests {
         model.attach(PastedContent.image(image))
         #expect(model.pendingAttachments.count == 1)
         #expect(model.pendingAttachments.first?.imageData != nil)
+    }
+
+    @Test func customServerConnectsAndDisconnects() async throws {
+        var credentials = Credentials.inMemory()
+        let key = MemorySecretStore()
+        credentials.customKey = key
+        credentials.customModels = { base, key in
+            guard key == nil || key == "good" else { throw ClaudeError.http(status: 401, message: "bad key") }
+            #expect(base.absoluteString == "http://localhost:11434/v1")
+            return [ModelOption(id: "qwen3", title: "qwen3", efforts: [])]
+        }
+        let model = makeModel(credentials: credentials)
+        model.preferences.provider = .custom
+        #expect(!model.isModelReady)
+
+        await model.connectCustomServer(address: "localhost:11434", name: "", key: "bad")
+        #expect(!model.accounts.hasKey(.custom))
+        #expect(model.newKeyErrors[.custom] != nil)
+        #expect(model.preferences.customBaseURL.isEmpty)
+
+        await model.connectCustomServer(address: "localhost:11434/", name: "Ollama", key: "")
+        #expect(model.accounts.keys[.custom] == .valid)
+        #expect(model.preferences.customBaseURL == "http://localhost:11434/v1")
+        #expect(model.accounts.customModels.map(\.id) == ["qwen3"])
+        #expect(model.providerName == "Ollama")
+        #expect(model.isModelReady)
+        #expect(try key.read() == nil)
+
+        model.deleteAPIKey(for: .custom)
+        #expect(!model.isModelReady)
+        #expect(model.preferences.customBaseURL.isEmpty)
+    }
+
+    @Test func hintsCanUseTheirOwnModel() async throws {
+        var credentials = Credentials.inMemory()
+        credentials.deepSeekKey = MemorySecretStore("sk-deepseek")
+        let model = makeModel(credentials: credentials)
+        model.preferences.claudeAuth = .apiKey
+        #expect(model.preferences.hintSelection == model.preferences.selection)
+
+        model.preferences.hintModel = HintModelChoice(provider: .deepSeek, model: "deepseek-flash", effort: "none")
+        let hint = model.preferences.hintSelection
+        #expect(hint.route == .deepSeek)
+        #expect(hint.model == "deepseek-flash")
+        #expect(hint.effort == "none")
+        #expect(hint.appliesEffortToHints)
+        // The chat keeps the model above.
+        #expect(model.preferences.selection.route == .claudeAPI)
+        #expect(model.isHintModelReady)
+        #expect(!model.isModelReady)
     }
 
     @Test func accountsReflectClaudeCodeSignIn() async {
@@ -310,7 +360,7 @@ struct AppModelTests {
             historyStore: MeetingHistoryStore(url: FileManager.default.temporaryDirectory.appending(path: "\(UUID().uuidString).json")),
             chatStore: ChatHistoryStore(url: FileManager.default.temporaryDirectory.appending(path: "chats-\(UUID().uuidString).json")),
             microphoneUsage: NoMicrophoneUsage(),
-            usageLedger: UsageLedger(url: nil)
+            usageLedgers: UsageLedgers(directory: nil)
         )
     }
 }
@@ -382,6 +432,7 @@ extension Credentials {
             claudeKey: MemorySecretStore(),
             openAIKey: MemorySecretStore(),
             deepSeekKey: MemorySecretStore(),
+            customKey: MemorySecretStore(),
             chatGPT: ChatGPTAccount(store: MemorySecretStore()),
             claudeCodeStatus: { ClaudeCodeStatus() },
             claudeCodeSignOut: {},
@@ -390,7 +441,8 @@ extension Credentials {
             claudeAPIModels: { _ in ModelOption.claudeAPIDefaults },
             openAIKeyCheck: { _ in },
             deepSeekBalance: { _ in DeepSeekBalance(isAvailable: true, amounts: []) },
-            deepSeekModels: { _ in ModelOption.deepSeekModels }
+            deepSeekModels: { _ in ModelOption.deepSeekModels },
+            customModels: { _, _ in [ModelOption(id: "llama3.2", title: "llama3.2", efforts: [])] }
         )
     }
 }

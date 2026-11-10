@@ -74,6 +74,9 @@ struct ResponsesStreamDecoder {
         case finished
     }
 
+    /// Tokens the reply used, from `response.completed`.
+    private(set) var usage: TokenUsage?
+
     mutating func consume(line: String) throws -> Event? {
         guard line.hasPrefix("data:") else { return nil }
         let data = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
@@ -84,6 +87,9 @@ struct ResponsesStreamDecoder {
         case "response.output_text.delta", "response.refusal.delta":
             return (object["delta"] as? String).map(Event.text)
         case "response.completed", "response.incomplete":
+            if let usage = (object["response"] as? [String: Any])?["usage"] as? [String: Any] {
+                self.usage = TokenUsage(responses: usage)
+            }
             return .finished
         case "response.failed":
             let response = object["response"] as? [String: Any]
@@ -104,7 +110,7 @@ struct ResponsesClient: Sendable {
     var session: URLSession = .shared
 
     /// Streams text; throws `ClaudeError.http` for HTTP failures so 401 can trigger a token refresh.
-    func streamText(_ body: ResponsesRequest, onText: @Sendable (String) -> Void) async throws {
+    func streamText(_ body: ResponsesRequest, onUsage: (@Sendable (TokenUsage) -> Void)? = nil, onText: @Sendable (String) -> Void) async throws {
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
         request.timeoutInterval = 120
@@ -125,18 +131,21 @@ struct ResponsesClient: Sendable {
             try Task.checkCancellation()
             switch try decoder.consume(line: line) {
             case .text(let text): onText(text)
-            case .finished: return
+            case .finished:
+                if let usage = decoder.usage, usage.totalTokens > 0 { onUsage?(usage) }
+                return
             case nil: continue
             }
         }
     }
 }
 
-/// ChatGPT models through the OpenAI API with an API key.
+/// ChatGPT models through the OpenAI API with an API key; every request's tokens go to the ledger.
 struct OpenAIAPIBackend: ModelBackend {
     static let endpoint = URL(string: "https://api.openai.com/v1/responses")!
     static let modelsEndpoint = URL(string: "https://api.openai.com/v1/models")!
     let keyStore: any SecretStoring
+    var ledgers: UsageLedgers?
 
     /// Asks the Models API whether the key is valid: HTTP 401 means it is not. A restricted key that may not
     /// list models (403) still authenticates, so it passes.
@@ -150,7 +159,7 @@ struct OpenAIAPIBackend: ModelBackend {
     }
 
     func stream(_ prompt: PreparedPrompt, model: String) -> AsyncThrowingStream<String, Error> {
-        let keyStore = keyStore
+        let keyStore = keyStore, ledgers = ledgers
         return AsyncThrowingStream { continuation in
             let task = Task {
                 do {
@@ -159,7 +168,9 @@ struct OpenAIAPIBackend: ModelBackend {
                     }
                     let model = model.isEmpty ? ModelOption.openAIAPIDefault.id : model
                     let client = ResponsesClient(endpoint: Self.endpoint, headers: ["Authorization": "Bearer \(key)"])
-                    try await client.streamText(ResponsesRequest(prompt: prompt, model: model)) { continuation.yield($0) }
+                    try await client.streamText(ResponsesRequest(prompt: prompt, model: model), onUsage: {
+                        ledgers?.record($0, provider: .openAI, model: model)
+                    }) { continuation.yield($0) }
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)

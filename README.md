@@ -10,7 +10,7 @@ The interface is in English and Russian and follows the system language. Swift 6
 
 ## How it works
 
-![How Siri+ works: call audio, microphone, voice and files are processed on the Mac; only text goes to Claude or ChatGPT, which return hints, answers and meeting summaries](docs/how-it-works.svg)
+![How Siri+ works: call audio, microphone, voice and files are processed on the Mac; only text goes to the model (Claude, ChatGPT, DeepSeek or a server of your own), which returns hints, answers and meeting summaries](docs/how-it-works.svg)
 
 ## What it can do
 
@@ -21,12 +21,13 @@ The interface is in English and Russian and follows the system language. Swift 6
 | ✅ | Keeps “Me” (microphone) and “Them” (call audio) apart in the transcript | Mac |
 | ✅ | On-device speech recognition in English, Russian and other macOS languages, with automatic language choice | Mac |
 | ✅ | Spots questions in the conversation and suggests answers in a side panel | Mac + model |
+| ✅ | A separate, faster model for hints, if you like: chats and summaries keep the main one | model |
 | ✅ | Hint panel hidden from screen sharing | Mac |
 | ✅ | Offers to start listening when a call begins and to stop when it ends | Mac |
-| ✅ | Meeting materials (agenda, names, terms) help recognition and hints | Mac + model |
+| ✅ | Meeting materials (agenda, names, terms) help recognition and hints; add documents, pictures, audio or video and their text is read on the Mac | Mac + model |
 | ✅ | Meeting history: title, summary, action items with checkboxes, participants, full transcript | Mac + model |
 | ✅ | Optional call recording to M4A, played back in the history | Mac |
-| ✅ | Ask questions about a past meeting, export it to Markdown | Mac + model |
+| ✅ | Ask questions about a past meeting, export it to Markdown, send its summary by Mail, to Notes, Messages or Telegram | Mac + model |
 | ✅ | Siri-style ask panel on ⌃⌥Space with voice dictation | Mac + model |
 | ✅ | Chat with saved history and search | Mac + model |
 | ✅ | Export chats, meetings or the whole history to Markdown | Mac |
@@ -35,8 +36,10 @@ The interface is in English and Russian and follows the system language. Swift 6
 | ✅ | Claude: browser sign-in through Claude Code, or an API key | model |
 | ✅ | Every model your account offers, with its own effort levels | model |
 | ✅ | ChatGPT: browser sign-in to your account, or an API key | model |
-| ✅ | DeepSeek: an API key, checked before it is saved, with balance and token statistics | model |
+| ✅ | DeepSeek: an API key, checked before it is saved, with the account balance | model |
+| ✅ | Any OpenAI-compatible server: Ollama, LM Studio, OpenRouter, Groq… Local models keep everything on the Mac | Mac or model |
 | ✅ | Subscription limits: how much is left and when it resets | Mac |
+| ✅ | API key statistics: requests, tokens and an estimated cost for today, 7 and 30 days | Mac |
 | ✅ | Desktop widget and a Shortcuts action | Mac |
 | ✅ | Updates itself from GitHub releases | Mac |
 
@@ -56,7 +59,7 @@ xattr -dr com.apple.quarantine /Applications/SiriPlus.app
 First launch:
 
 1. The ✦ icon appears in the menu bar.
-2. Settings → Model: choose Claude or ChatGPT and sign in.
+2. Settings → Model: choose Claude, ChatGPT, DeepSeek or Other and sign in, add a key or connect a server.
 3. Meeting → Start. macOS asks for screen and system audio recording and for the microphone.
 
 ## Meetings
@@ -64,10 +67,12 @@ First launch:
 - **Audio source.** A running call app is picked automatically. You can choose any other running app (for example a browser with Google Meet) or “All system audio”, which works with any call.
 - **Your voice** comes from the microphone as a separate channel. Headphones are the most reliable. When the call plays through speakers (built-in, a display or AirPlay), the meeting screen says so, the microphone is not transcribed while the other side speaks unless you are clearly louder than their echo, and “Me” lines that nearly repeat them from the last 10 seconds are dropped. Words said over the other side may be lost then.
 - **Language.** “System” listens for your system languages and keyboard layouts at once. For each speaker, the language whose recognizer is clearly more confident over the first phrases is kept and the others stop. You can also fix the language in Settings.
+- **Materials.** The notes field next to the hints takes the agenda, facts and names. Drop files on it, paste them with ⌘V or use the paperclip: PDF, text and code are read, pictures and screenshots go through on-device text recognition, audio and video through on-device speech recognition, and the text is added to the notes (up to 40,000 characters per file).
 - **Hints** come after a question from the other side and about every 45 seconds while the conversation moves on, only on questions, or only on request (the Hint button or ⌃⌥Space). The model answers “—” when no hint is needed, and nothing is shown.
 - **Questions** are spotted locally by question words after a short pause, since on-device Russian recognition adds no punctuation.
 - **History.** After Stop, the meeting is saved on your Mac with a title, summary, action items and participants written by the model. The search covers everything, including the transcript. “Ask about meeting” opens a chat that answers from the transcript.
 - **Recording.** Off by default. With “Save meeting audio (M4A)” on, the call and your microphone are saved as one M4A file with the meeting (about 30–60 MB an hour) and play back in the history. The file is deleted with the meeting.
+- **Sending the summary.** The share button in a meeting's toolbar sends its title, participants, summary and tasks by Mail, to Notes, Messages, Telegram or any app in the macOS share menu.
 - **Export.** A meeting or a chat saves as a Markdown file from its toolbar. Settings → Conversation → Export saves the whole history into a folder: `Meetings/` and `Chats/` with one file each (a recorded meeting's M4A next to its Markdown), and `index.md` linking them with dates and the first line of each summary.
 
 Tell participants you use an assistant: recording a conversation without consent is illegal in many countries.
@@ -86,26 +91,32 @@ Tell participants you use an assistant: recording a conversation without consent
 | **Claude** | Through the official [Claude Code](https://code.claude.com/docs/en/setup): “Sign in to Claude” opens Terminal with `claude auth login`. Requests run through `claude -p` in safe mode (no tools, no saved sessions) and use your Pro/Max limits. | A key from [Claude Console](https://platform.claude.com/settings/keys); direct streaming requests to `api.anthropic.com`. |
 | **ChatGPT** | OAuth sign-in to your ChatGPT account (PKCE, loopback on port 1455/1457), as in Codex. Tokens live in the Keychain and refresh automatically. | An OpenAI API key, Responses API. |
 | **DeepSeek** | — | A key from [DeepSeek Platform](https://platform.deepseek.com/api_keys); streaming Chat Completions at `api.deepseek.com` (DeepSeek Flash, V4 Pro and whatever the key lists). |
+| **Other** | — | Any server with an OpenAI-compatible Chat Completions API, with an optional key. Presets for Ollama (`http://localhost:11434/v1`), LM Studio (`http://localhost:1234/v1`), OpenRouter and Groq; the model list comes from the server's `GET /models`. |
 
-Every API key is checked with its provider before it is saved: a key the provider refuses is not saved, and a key that could not be checked (no connection) is saved and checked again later.
+Every API key is checked with its provider before it is saved: a key the provider refuses is not saved, and a key that could not be checked (no connection) is saved and checked again later. A server of the “Other” provider is checked the same way: it has to answer and list its models.
+
+With a local server such as Ollama or LM Studio, nothing at all leaves the Mac. Such servers take no effort setting and decide the answer length themselves.
 
 The model list comes from your account: with a Claude sign-in, every model Claude Code offers you (Opus, Sonnet, Haiku, Fable and pinned older versions); with an API key, the models the key can use; with ChatGPT, the models your account lists. Haiku is the fastest for meeting hints (the answer starts in about two seconds).
 
 **Effort** sets how long the model thinks before answering, from low to maximum. Settings shows only the levels the chosen model accepts. “Automatic” thinks briefly for brief answers and longer for detailed ones. Meeting hints always think briefly so they arrive in seconds.
 
-With an account sign-in, Siri+ shows what is left of your subscription limits and when they reset: in Settings, in the sidebar status line and in the menu bar menu. Claude limits come from `claude -p /usage`, ChatGPT limits from the account's usage endpoint. API keys have no subscription limits.
+**Model for meeting hints.** Settings → Model for Meeting Hints → “Separate model for hints” picks another provider, model and effort just for live hints, for example DeepSeek Flash without thinking or Claude Haiku, while chats and meeting summaries keep the model above. The provider's sign-in or key is shared; a chosen effort is sent as is, “no thinking” included, and “Automatic” keeps hints brief.
 
-With DeepSeek, Settings shows the account balance (from `GET /user/balance`) and what requests from this Mac used today, in 7 and in 30 days: requests, input and output tokens and an estimated cost at DeepSeek's list prices (off-peak hours at half price). The counts come from the `usage` of each reply and stay in `~/Library/Application Support/SiriPlus/deepseek-usage.json`.
+With an account sign-in, Siri+ shows what is left of your subscription limits and when they reset: in Settings, in the sidebar status line and in the menu bar menu. Claude limits come from `claude -p /usage`, ChatGPT limits from the account's usage endpoint.
+
+API keys have no subscription limits; they are billed per token. For a Claude, OpenAI or DeepSeek key and for an “Other” server, Settings → Usage shows what requests from this Mac used today, in 7 and in 30 days: requests, input and output tokens and, for Claude and DeepSeek, an estimated cost at list prices (DeepSeek's off-peak hours at half price). The counts come from the token usage each reply reports and stay in `~/Library/Application Support/SiriPlus/Usage/`. With DeepSeek, the account balance (from `GET /user/balance`) is shown too, and in the window's status line.
 
 Subscription sign-in is for personal use on your own Mac.
 
 ## Privacy
 
-| On your Mac | In the cloud (Claude or ChatGPT) |
+| On your Mac | In the cloud (the chosen provider; nothing with a local server) |
 | --- | --- |
 | Capturing call and microphone audio | Meeting hints |
 | Speech recognition | Answers in chat and the ask panel |
 | Spotting questions | Reading an attached screenshot or image |
+| Reading files added to the meeting materials, text on pictures included | |
 | Sign-in tokens and API keys (Keychain) | Meeting title, participants and summary after Stop |
 | Chats and meeting history (`~/Library/Application Support/SiriPlus/`) | |
 | Meeting audio, if you turn recording on (`Recordings/` in the same folder) | |
@@ -114,7 +125,7 @@ Audio is never sent anywhere, recorded or not. The model receives your messages,
 
 ## Updates
 
-Siri+ checks the [latest release](https://github.com/rtmo0/siri-plus/releases/latest) 10 seconds after launch and every 12 hours, or on demand from the menu. When a new version is out, it offers to install it: downloads the DMG with a progress bar, verifies its SHA-256, checks the version inside, replaces the app and relaunches. The app needs to live in a folder you can write to, such as Applications.
+Siri+ checks the [latest release](https://github.com/rtmo0/siri-plus/releases/latest) 10 seconds after launch and every 12 hours, or on demand from the menu (where “About Siri+” shows the version and license). When a new version is out, it offers to install it: downloads the DMG with a progress bar, verifies its SHA-256, checks the version inside, replaces the app and relaunches. The app needs to live in a folder you can write to, such as Applications.
 
 ## Build from source
 
@@ -140,18 +151,19 @@ swift test                               # shared logic, no screen, microphone o
 python3 scripts/generate-project.py      # after adding Swift files
 ```
 
-Releases: pushing a tag like `v0.3.0` builds the DMG on the `macos-26` runner and publishes a GitHub Release. `bash scripts/release.sh 0.3.0` builds the same DMG locally into `dist/`.
+Releases: pushing a tag like `v0.5.0` builds the DMG on the `macos-26` runner and publishes a GitHub Release. `bash scripts/release.sh 0.5.0` builds the same DMG locally into `dist/`.
 
 ### Project layout
 
 ```text
 SiriPlus/
-  App/          App, AppModel (chat, attachments, dictation), MeetingModel (meeting and hints),
-                histories, updates, usage limits
+  App/          App, AppModel (chat, attachments, dictation, keys), MeetingModel (meeting, hints,
+                materials), histories, updates, subscription limits and API key usage
   Features/     Windows: chat, meeting, settings, ask panel, update prompt
   Models/       Messages, settings, transcript and question detector
-  Services/     Model providers, audio capture and speech recognition, media transcription,
-                Keychain, screenshots, hotkey, updater
+  Services/     Model providers (Claude, OpenAI, DeepSeek, OpenAI-compatible servers), usage ledgers,
+                audio capture and speech recognition, media transcription, text recognition for
+                materials, Keychain, screenshots, hotkey, updater
   Intents/      Siri and Shortcuts action
   Resources/    Info.plist, entitlements, string catalogs (en, ru), icons
 SiriPlusWidget/ Desktop widget

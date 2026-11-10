@@ -1,37 +1,50 @@
 import SwiftUI
 
-/// The DeepSeek balance and what requests from this Mac used today, this week and this month.
-struct DeepSeekUsageView: View {
-    @ObservedObject var usage: DeepSeekUsageModel
+/// What requests with a key or a server used today, this week and this month; with DeepSeek, the balance too.
+struct APIUsageView: View {
+    @ObservedObject var usage: APIUsageModel
+    let provider: AIProvider
     @State private var confirmsReset = false
 
+    /// Only Claude and DeepSeek have prices Siri+ knows.
+    private var showsCost: Bool { provider == .claude || provider == .deepSeek }
+
     var body: some View {
-        LabeledContent {
-            if usage.isRefreshing {
-                ProgressView().controlSize(.small)
-            } else {
-                Button("Refresh", systemImage: "arrow.clockwise") { Task { await usage.refresh() } }
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.glass)
-                    .buttonBorderShape(.circle)
-                    .controlSize(.small)
-                    .help("Refresh")
+        if provider == .deepSeek {
+            LabeledContent {
+                if usage.isRefreshing {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Button("Refresh", systemImage: "arrow.clockwise") { Task { await usage.refreshBalance() } }
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.glass)
+                        .buttonBorderShape(.circle)
+                        .controlSize(.small)
+                        .help("Refresh")
+                }
+            } label: {
+                balance
             }
-        } label: {
-            balance
         }
         statistics
         HStack(spacing: 14) {
-            Link("Top Up", destination: URL(string: "https://platform.deepseek.com/top_up")!)
-            Link("Usage on DeepSeek", destination: URL(string: "https://platform.deepseek.com/usage")!)
+            switch provider {
+            case .deepSeek:
+                Link("Top Up", destination: URL(string: "https://platform.deepseek.com/top_up")!)
+                Link("Usage on DeepSeek", destination: URL(string: "https://platform.deepseek.com/usage")!)
+            case .openAI:
+                Link("Usage on OpenAI", destination: URL(string: "https://platform.openai.com/usage")!)
+            case .claude, .custom:
+                EmptyView()
+            }
             Spacer()
             Button("Reset Statistics", role: .destructive) { confirmsReset = true }
                 .buttonStyle(.borderless)
-                .disabled(usage.periods.month.requests == 0)
-                .confirmationDialog("Reset DeepSeek statistics?", isPresented: $confirmsReset) {
-                    Button("Reset", role: .destructive) { usage.resetStatistics() }
+                .disabled(usage.periods(for: provider).month.requests == 0)
+                .confirmationDialog("Reset the statistics?", isPresented: $confirmsReset) {
+                    Button("Reset", role: .destructive) { usage.resetStatistics(for: provider) }
                 } message: {
-                    Text("The counted requests and tokens are deleted from this Mac. The balance is not affected.")
+                    Text("The counted requests and tokens are deleted from this Mac. Nothing changes with the provider.")
                 }
         }
         .font(.callout)
@@ -70,7 +83,8 @@ struct DeepSeekUsageView: View {
     }
 
     private var statistics: some View {
-        let periods = [usage.periods.today, usage.periods.week, usage.periods.month]
+        let periods = usage.periods(for: provider)
+        let columns = [periods.today, periods.week, periods.month]
         return Grid(alignment: .trailing, horizontalSpacing: 18, verticalSpacing: 6) {
             GridRow {
                 Text(verbatim: "")
@@ -81,13 +95,15 @@ struct DeepSeekUsageView: View {
             .font(.caption)
             .foregroundStyle(.secondary)
             Divider()
-            row("Requests", periods) { $0.requests.formatted() }
-            row("Input tokens", periods) { Self.tokens($0.inputTokens) }
+            row("Requests", columns) { $0.requests.formatted() }
+            row("Input tokens", columns) { Self.tokens($0.inputTokens) }
                 .help("Tokens sent to the model: messages, meeting transcript, materials. Repeated ones are billed at the much lower cache price.")
-            row("Output tokens", periods) { Self.tokens($0.outputTokens) }
+            row("Output tokens", columns) { Self.tokens($0.outputTokens) }
                 .help("Tokens of the answers, thinking included")
-            row("Cost", periods) { Self.cost($0) }
-                .help("Estimated from DeepSeek’s list prices")
+            if showsCost {
+                row("Cost", columns) { Self.cost($0) }
+                    .help("Estimated from the provider’s list prices")
+            }
         }
         .font(.callout.monospacedDigit())
         .frame(maxWidth: .infinity, alignment: .leading)

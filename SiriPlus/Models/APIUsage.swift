@@ -1,24 +1,45 @@
 import Foundation
 
-/// Tokens one DeepSeek request used, from the `usage` of its last stream chunk.
+/// Tokens one API request used, as the provider reports them at the end of the stream.
 struct TokenUsage: Equatable, Sendable {
+    /// Input read from the provider's prompt cache, billed at a fraction of the price.
     var cacheHitTokens = 0
+    /// Input billed at the full price.
     var cacheMissTokens = 0
+    /// Input written to the cache (Claude), billed a little above the full price.
+    var cacheWriteTokens = 0
     var outputTokens = 0
     /// Part of `outputTokens` spent on thinking.
     var reasoningTokens = 0
 
-    var inputTokens: Int { cacheHitTokens + cacheMissTokens }
+    var inputTokens: Int { cacheHitTokens + cacheMissTokens + cacheWriteTokens }
     var totalTokens: Int { inputTokens + outputTokens }
 
-    init(cacheHitTokens: Int = 0, cacheMissTokens: Int = 0, outputTokens: Int = 0, reasoningTokens: Int = 0) {
+    init(cacheHitTokens: Int = 0, cacheMissTokens: Int = 0, cacheWriteTokens: Int = 0, outputTokens: Int = 0, reasoningTokens: Int = 0) {
         self.cacheHitTokens = cacheHitTokens
         self.cacheMissTokens = cacheMissTokens
+        self.cacheWriteTokens = cacheWriteTokens
         self.outputTokens = outputTokens
         self.reasoningTokens = reasoningTokens
     }
 
-    /// Reads a Chat Completions `usage` object; nil when it is missing or empty.
+    /// Reads a Messages API `usage` object (Claude), as `message_start` carries it.
+    init(claude usage: [String: Any]) {
+        let int = { (key: String) in (usage[key] as? NSNumber)?.intValue ?? 0 }
+        self.init(cacheHitTokens: int("cache_read_input_tokens"), cacheMissTokens: int("input_tokens"),
+                  cacheWriteTokens: int("cache_creation_input_tokens"), outputTokens: int("output_tokens"))
+    }
+
+    /// Reads a Responses API `usage` object (OpenAI).
+    init(responses usage: [String: Any]) {
+        let int = { (value: Any?) in (value as? NSNumber)?.intValue ?? 0 }
+        let input = int(usage["input_tokens"])
+        let cached = int((usage["input_tokens_details"] as? [String: Any])?["cached_tokens"])
+        self.init(cacheHitTokens: cached, cacheMissTokens: max(0, input - cached), outputTokens: int(usage["output_tokens"]),
+                  reasoningTokens: int((usage["output_tokens_details"] as? [String: Any])?["reasoning_tokens"]))
+    }
+
+    /// Reads a Chat Completions `usage` object (DeepSeek and OpenAI-compatible servers); nil when it is missing or empty.
     init?(json: Any?) {
         guard let usage = json as? [String: Any] else { return nil }
         let int = { (key: String) in (usage[key] as? NSNumber)?.intValue }
@@ -29,6 +50,48 @@ struct TokenUsage: Equatable, Sendable {
         outputTokens = int("completion_tokens") ?? 0
         reasoningTokens = ((usage["completion_tokens_details"] as? [String: Any])?["reasoning_tokens"] as? NSNumber)?.intValue ?? 0
         if totalTokens == 0 { return nil }
+    }
+}
+
+/// Estimated cost of a request at the provider's list prices; nil where no price is known
+/// (OpenAI's models, servers of the "Other" provider).
+enum APIPricing {
+    static func cost(of usage: TokenUsage, provider: AIProvider, model: String, at date: Date = Date()) -> Double? {
+        switch provider {
+        case .deepSeek: DeepSeekPrice.cost(of: usage, model: model, at: date)
+        case .claude: ClaudePrice.of(model).map { $0.cost(of: usage) }
+        case .openAI, .custom: nil
+        }
+    }
+}
+
+/// Claude API list prices in US dollars per million tokens (November 2026). A cache write costs 1.25 times the input.
+struct ClaudePrice: Equatable, Sendable {
+    let input: Double
+    let output: Double
+    let cacheRead: Double
+
+    static func of(_ model: String) -> ClaudePrice? {
+        switch model {
+        case "claude-opus-5-5": ClaudePrice(input: 4, output: 20, cacheRead: 0.2)
+        case "claude-opus-5", "claude-opus-4-8", "claude-opus-4-7", "claude-opus-4-6": ClaudePrice(input: 5, output: 25, cacheRead: 0.5)
+        case "claude-fable-5-2": ClaudePrice(input: 8, output: 40, cacheRead: 0.2)
+        case "claude-fable-5-1", "claude-fable-5": ClaudePrice(input: 10, output: 50, cacheRead: 1)
+        case "claude-sonnet-5-5": ClaudePrice(input: 2, output: 10, cacheRead: 0.1)
+        case "claude-sonnet-5": ClaudePrice(input: 2, output: 10, cacheRead: 0.2)
+        case "claude-sonnet-4-6": ClaudePrice(input: 3, output: 15, cacheRead: 0.3)
+        case "claude-haiku-5-5": ClaudePrice(input: 0.1, output: 0.5, cacheRead: 0.01)
+        case "claude-haiku-4-5": ClaudePrice(input: 1, output: 5, cacheRead: 0.1)
+        default: nil
+        }
+    }
+
+    func cost(of usage: TokenUsage) -> Double {
+        let dollars = Double(usage.cacheMissTokens) * input
+            + Double(usage.cacheWriteTokens) * input * 1.25
+            + Double(usage.cacheHitTokens) * cacheRead
+            + Double(usage.outputTokens) * output
+        return dollars / 1_000_000
     }
 }
 
@@ -113,25 +176,45 @@ struct DeepSeekBalance: Equatable, Sendable {
     }
 }
 
-/// What DeepSeek requests used on one day, in the Mac's time zone.
+/// What one provider's requests used on one day, in the Mac's time zone.
 struct DailyUsage: Codable, Equatable, Sendable {
     /// "2026-11-10".
     let day: String
     var requests = 0
     var cacheHitTokens = 0
     var cacheMissTokens = 0
+    var cacheWriteTokens = 0
     var outputTokens = 0
     var reasoningTokens = 0
     /// Estimated dollars, for requests to models with a known price.
     var cost = 0.0
 
-    var inputTokens: Int { cacheHitTokens + cacheMissTokens }
+    var inputTokens: Int { cacheHitTokens + cacheMissTokens + cacheWriteTokens }
     var totalTokens: Int { inputTokens + outputTokens }
+
+    init(day: String) {
+        self.day = day
+    }
+
+    // Days saved before a counter existed lack its key.
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        day = try container.decode(String.self, forKey: .day)
+        let int = { (key: CodingKeys) in try container.decodeIfPresent(Int.self, forKey: key) ?? 0 }
+        requests = try int(.requests)
+        cacheHitTokens = try int(.cacheHitTokens)
+        cacheMissTokens = try int(.cacheMissTokens)
+        cacheWriteTokens = try int(.cacheWriteTokens)
+        outputTokens = try int(.outputTokens)
+        reasoningTokens = try int(.reasoningTokens)
+        cost = try container.decodeIfPresent(Double.self, forKey: .cost) ?? 0
+    }
 
     mutating func add(_ usage: TokenUsage, cost: Double?) {
         requests += 1
         cacheHitTokens += usage.cacheHitTokens
         cacheMissTokens += usage.cacheMissTokens
+        cacheWriteTokens += usage.cacheWriteTokens
         outputTokens += usage.outputTokens
         reasoningTokens += usage.reasoningTokens
         self.cost += cost ?? 0
@@ -142,6 +225,7 @@ struct DailyUsage: Codable, Equatable, Sendable {
         sum.requests += rhs.requests
         sum.cacheHitTokens += rhs.cacheHitTokens
         sum.cacheMissTokens += rhs.cacheMissTokens
+        sum.cacheWriteTokens += rhs.cacheWriteTokens
         sum.outputTokens += rhs.outputTokens
         sum.reasoningTokens += rhs.reasoningTokens
         sum.cost += rhs.cost

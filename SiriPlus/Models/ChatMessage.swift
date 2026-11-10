@@ -50,6 +50,8 @@ enum AIProvider: String, CaseIterable, Codable, Identifiable, Sendable {
     case claude
     case openAI
     case deepSeek
+    /// Any server with an OpenAI-compatible Chat Completions API: Ollama, LM Studio, OpenRouter, Groq…
+    case custom
 
     var id: String { rawValue }
 
@@ -58,11 +60,21 @@ enum AIProvider: String, CaseIterable, Codable, Identifiable, Sendable {
         case .claude: "Claude"
         case .openAI: "ChatGPT"
         case .deepSeek: "DeepSeek"
+        case .custom: String(localized: "Other")
         }
     }
 
-    /// DeepSeek has no subscription sign-in: it is reached with an API key only.
-    var offersAccountSignIn: Bool { self != .deepSeek }
+    /// Only Claude and ChatGPT have a subscription sign-in; the others are reached with a key or a server address.
+    var offersAccountSignIn: Bool { self == .claude || self == .openAI }
+}
+
+/// A model chosen for live meeting hints, apart from the one that answers chats and writes summaries.
+/// The provider's sign-in is shared; only the model and its effort differ.
+struct HintModelChoice: Codable, Equatable, Sendable {
+    var provider: AIProvider
+    /// Empty uses the provider's model chosen above.
+    var model = ""
+    var effort = ModelEffort.automatic
 }
 
 enum AuthMethod: String, CaseIterable, Codable, Identifiable, Sendable {
@@ -91,6 +103,12 @@ struct ModelSelection: Equatable, Sendable {
     var openAIEffort = ModelEffort.automatic
     var deepSeekModel = ModelOption.deepSeekDefault.id
     var deepSeekEffort = ModelEffort.automatic
+    /// An OpenAI-compatible server, such as "http://localhost:11434/v1"; empty when none is connected.
+    var customBaseURL = ""
+    /// Empty means the first model the server lists.
+    var customModel = ""
+    /// Live hints normally keep a light effort whatever is chosen; a model picked for hints uses its own.
+    var appliesEffortToHints = false
 
     /// The way of reaching the chosen model.
     var route: ModelCatalog.Route {
@@ -98,6 +116,7 @@ struct ModelSelection: Equatable, Sendable {
         case .claude: claudeAuth == .account ? .claudeCode : .claudeAPI
         case .openAI: openAIAuth == .account ? .chatGPT : .openAIAPI
         case .deepSeek: .deepSeek
+        case .custom: .custom
         }
     }
 
@@ -107,16 +126,40 @@ struct ModelSelection: Equatable, Sendable {
         case .claude: claudeModel
         case .openAI: openAIModel
         case .deepSeek: deepSeekModel
+        case .custom: customModel
         }
     }
 
-    /// The effort chosen for the chosen provider.
+    /// The effort chosen for the chosen provider; servers of the "Other" provider take none.
     var effort: String {
         switch provider {
         case .claude: claudeEffort
         case .openAI: openAIEffort
         case .deepSeek: deepSeekEffort
+        case .custom: ModelEffort.automatic
         }
+    }
+
+    /// This selection with another provider, its model and effort, for hints.
+    func replacing(with choice: HintModelChoice) -> ModelSelection {
+        var selection = self
+        selection.provider = choice.provider
+        selection.appliesEffortToHints = true
+        let model = choice.model
+        switch choice.provider {
+        case .claude:
+            if !model.isEmpty { selection.claudeModel = model }
+            selection.claudeEffort = choice.effort
+        case .openAI:
+            if !model.isEmpty { selection.openAIModel = model }
+            selection.openAIEffort = choice.effort
+        case .deepSeek:
+            if !model.isEmpty { selection.deepSeekModel = model }
+            selection.deepSeekEffort = choice.effort
+        case .custom:
+            if !model.isEmpty { selection.customModel = model }
+        }
+        return selection
     }
 }
 
@@ -154,6 +197,12 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
     var openAIEffort = ModelEffort.automatic
     var deepSeekModel = ModelOption.deepSeekDefault.id
     var deepSeekEffort = ModelEffort.automatic
+    var customBaseURL = ""
+    /// The name shown for the "Other" provider, such as "Ollama"; empty shows the server's host.
+    var customName = ""
+    var customModel = ""
+    /// Nil: hints use the model above.
+    var hintModel: HintModelChoice?
     var hintMode: HintMode = .questionsAndTopic
     var transcriptionLocale = systemLocale
     var capturesMicrophone = true
@@ -183,6 +232,10 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         openAIEffort: String = ModelEffort.automatic,
         deepSeekModel: String = ModelOption.deepSeekDefault.id,
         deepSeekEffort: String = ModelEffort.automatic,
+        customBaseURL: String = "",
+        customName: String = "",
+        customModel: String = "",
+        hintModel: HintModelChoice? = nil,
         hintMode: HintMode = .questionsAndTopic,
         transcriptionLocale: String = systemLocale,
         capturesMicrophone: Bool = true,
@@ -205,6 +258,10 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         self.openAIEffort = openAIEffort
         self.deepSeekModel = deepSeekModel
         self.deepSeekEffort = deepSeekEffort
+        self.customBaseURL = customBaseURL
+        self.customName = customName
+        self.customModel = customModel
+        self.hintModel = hintModel
         self.hintMode = hintMode
         self.transcriptionLocale = transcriptionLocale
         self.capturesMicrophone = capturesMicrophone
@@ -235,6 +292,10 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         openAIEffort = try container.decodeIfPresent(String.self, forKey: .openAIEffort) ?? defaults.openAIEffort
         deepSeekModel = try container.decodeIfPresent(String.self, forKey: .deepSeekModel) ?? defaults.deepSeekModel
         deepSeekEffort = try container.decodeIfPresent(String.self, forKey: .deepSeekEffort) ?? defaults.deepSeekEffort
+        customBaseURL = try container.decodeIfPresent(String.self, forKey: .customBaseURL) ?? defaults.customBaseURL
+        customName = try container.decodeIfPresent(String.self, forKey: .customName) ?? defaults.customName
+        customModel = try container.decodeIfPresent(String.self, forKey: .customModel) ?? defaults.customModel
+        hintModel = try? container.decodeIfPresent(HintModelChoice.self, forKey: .hintModel)
         hintMode = (try? container.decodeIfPresent(HintMode.self, forKey: .hintMode)) ?? defaults.hintMode
         transcriptionLocale = try container.decodeIfPresent(String.self, forKey: .transcriptionLocale) ?? defaults.transcriptionLocale
         capturesMicrophone = try container.decodeIfPresent(Bool.self, forKey: .capturesMicrophone) ?? defaults.capturesMicrophone
@@ -260,8 +321,22 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
             claudeEffort: claudeEffort,
             openAIEffort: openAIEffort,
             deepSeekModel: deepSeekModel,
-            deepSeekEffort: deepSeekEffort
+            deepSeekEffort: deepSeekEffort,
+            customBaseURL: customBaseURL,
+            customModel: customModel
         )
+    }
+
+    /// What answers live meeting hints: the model chosen for them, or the one above.
+    var hintSelection: ModelSelection {
+        hintModel.map(selection.replacing(with:)) ?? selection
+    }
+
+    /// The provider's name for status lines: "Claude", or the name given to an OpenAI-compatible server.
+    func providerName(_ provider: AIProvider) -> String {
+        guard provider == .custom else { return provider.title }
+        let name = customName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return name.isEmpty ? (URL(string: customBaseURL)?.host() ?? provider.title) : name
     }
 
     /// The languages speech is recognized in: the chosen one, or every language this Mac's user likely speaks.

@@ -15,11 +15,11 @@ struct DeepSeekTests {
             effort: "high",
             maxTokens: 4_000
         )
-        let body = try json(DeepSeekChatRequest(prompt: prompt, model: "deepseek-flash"))
+        let body = try json(ChatCompletionsRequest(prompt: prompt, model: "deepseek-flash"))
         #expect(body["model"] as? String == "deepseek-flash")
         #expect(body["reasoning_effort"] as? String == "high")
         #expect((body["thinking"] as? [String: Any])?["type"] as? String == "enabled")
-        #expect(body["max_tokens"] as? Int == 4_000 + DeepSeekChatRequest.thinkingAllowance)
+        #expect(body["max_tokens"] as? Int == 4_000 + ChatCompletionsRequest.thinkingAllowance)
         #expect((body["stream_options"] as? [String: Any])?["include_usage"] as? Bool == true)
         let messages = try #require(body["messages"] as? [[String: Any]])
         #expect(messages.map { $0["role"] as? String } == ["system", "user", "assistant"])
@@ -32,14 +32,14 @@ struct DeepSeekTests {
 
     @Test func noThinkingSwitchesThinkingOff() throws {
         let prompt = PreparedPrompt(system: "", turns: [.init(role: .user, text: "Hi")], effort: "none", maxTokens: 4_000)
-        let body = try json(DeepSeekChatRequest(prompt: prompt, model: "deepseek-flash"))
+        let body = try json(ChatCompletionsRequest(prompt: prompt, model: "deepseek-flash"))
         #expect(body["reasoning_effort"] == nil)
         #expect((body["thinking"] as? [String: Any])?["type"] as? String == "disabled")
         #expect(body["max_tokens"] as? Int == 4_000)
     }
 
     @Test func streamDecoderReadsTextUsageAndEnd() throws {
-        var decoder = DeepSeekStreamDecoder()
+        var decoder = ChatCompletionsStreamDecoder()
         #expect(try decoder.consume(line: ": keep-alive").isEmpty)
         #expect(try decoder.consume(line: #"data: {"choices":[{"delta":{"reasoning_content":"hmm"}}]}"#).isEmpty)
         #expect(try decoder.consume(line: #"data: {"choices":[{"delta":{"content":"Привет"}}],"usage":null}"#) == [.text("Привет")])
@@ -79,7 +79,7 @@ struct DeepSeekTests {
 
     @Test func modelsListGetsTitlesAndEfforts() throws {
         let data = Data(#"{"object":"list","data":[{"id":"deepseek-flash","object":"model"},{"id":"deepseek-v5-pro","object":"model"}]}"#.utf8)
-        let models = try DeepSeekClient.parseModels(data)
+        let models = try ChatCompletionsClient.parseModels(data, flavor: .deepSeek)
         #expect(models.map(\.title) == ["DeepSeek Flash", "DeepSeek V5 Pro"])
         #expect(models.allSatisfy { $0.efforts == ModelEffort.deepSeekLevels })
     }
@@ -92,14 +92,16 @@ struct DeepSeekTests {
     }
 
     @Test func ledgerSumsDaysAndForgetsOldOnes() throws {
-        let ledger = UsageLedger(url: FileManager.default.temporaryDirectory.appending(path: "deepseek-\(UUID().uuidString).json"))
+        let url = FileManager.default.temporaryDirectory.appending(path: "usage-\(UUID().uuidString).json")
+        let ledger = UsageLedger(url: url)
         let calendar = Calendar(identifier: .gregorian)
         let now = Date()
         let usage = TokenUsage(cacheHitTokens: 10, cacheMissTokens: 90, outputTokens: 50)
-        ledger.record(usage, model: "deepseek-flash", at: now, calendar: calendar)
-        ledger.record(usage, model: "deepseek-flash", at: now, calendar: calendar)
-        ledger.record(usage, model: "deepseek-flash", at: calendar.date(byAdding: .day, value: -3, to: now)!, calendar: calendar)
-        ledger.record(usage, model: "deepseek-flash", at: calendar.date(byAdding: .day, value: -20, to: now)!, calendar: calendar)
+        let cost = DeepSeekPrice.cost(of: usage, model: "deepseek-flash", at: now)
+        ledger.record(usage, cost: cost, at: now, calendar: calendar)
+        ledger.record(usage, cost: cost, at: now, calendar: calendar)
+        ledger.record(usage, cost: cost, at: calendar.date(byAdding: .day, value: -3, to: now)!, calendar: calendar)
+        ledger.record(usage, cost: cost, at: calendar.date(byAdding: .day, value: -20, to: now)!, calendar: calendar)
         let periods = UsagePeriods(days: ledger.days, now: now, calendar: calendar)
         #expect(periods.today.requests == 2)
         #expect(periods.week.requests == 3)
@@ -108,8 +110,11 @@ struct DeepSeekTests {
         #expect(periods.month.outputTokens == 200)
         #expect(periods.today.cost > 0)
 
+        // Counts survive a restart.
+        #expect(UsageLedger(url: url).days == ledger.days)
+
         // A request 100 days later drops days older than the kept window.
-        ledger.record(usage, model: "deepseek-flash", at: calendar.date(byAdding: .day, value: 100, to: now)!, calendar: calendar)
+        ledger.record(usage, cost: nil, at: calendar.date(byAdding: .day, value: 100, to: now)!, calendar: calendar)
         #expect(ledger.days.count == 1)
         ledger.reset()
         #expect(ledger.days.isEmpty)

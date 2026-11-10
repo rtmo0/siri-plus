@@ -74,6 +74,16 @@ struct PromptTests {
         #expect(try await run(ModelSelection(provider: .openAI, openAIModel: "gpt-6-luna", openAIAuth: .apiKey)) == "openAIAPI:gpt-6-luna")
         #expect(try await run(ModelSelection(provider: .openAI, openAIModel: "gpt-x", openAIAuth: .account)) == "chatGPT:gpt-x")
         #expect(try await run(ModelSelection(provider: .deepSeek, deepSeekModel: "deepseek-v4-pro")) == "deepSeek:deepseek-v4-pro")
+        var custom = service
+        custom.custom = { address in RecordingBackend(name: "custom@\(address)") }
+        func runCustom(_ selection: ModelSelection) async throws -> String {
+            var text = ""
+            for try await part in custom.hint(for: HintRequest(trigger: .manual, transcript: "", notes: "", previousHints: [], selection: selection)) {
+                text += part
+            }
+            return text
+        }
+        #expect(try await runCustom(ModelSelection(provider: .custom, customBaseURL: "http://localhost:1234/v1", customModel: "qwen3")) == "custom@http://localhost:1234/v1:qwen3")
     }
 
     @Test func effortFollowsSettingsAndWhatTheModelAccepts() async throws {

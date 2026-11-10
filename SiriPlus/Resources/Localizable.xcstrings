@@ -71,6 +71,16 @@
         }
       }
     },
+    "%@ is not connected: choose it under Model above to sign in or add a key, then switch back.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ не подключён: выберите его выше в разделе «Модель», войдите или добавьте ключ, затем вернитесь обратно."
+          }
+        }
+      }
+    },
     "%@ is not running. Start the call or choose “All system audio”.": {
       "localizations": {
         "ru": {
@@ -267,6 +277,16 @@
         }
       }
     },
+    "About Siri+": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "О Siri+"
+          }
+        }
+      }
+    },
     "About the meeting": {
       "localizations": {
         "ru": {
@@ -287,6 +307,16 @@
         }
       }
     },
+    "Add File…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавить файл…"
+          }
+        }
+      }
+    },
     "Add a DeepSeek API key in Settings.": {
       "localizations": {
         "ru": {
@@ -303,6 +333,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Добавьте ключ API в Настройках."
+          }
+        }
+      }
+    },
+    "Add the text of documents, pictures, audio or video to the notes. Everything is read on this Mac.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавить в заметки текст документов, картинок, аудио или видео. Всё читается на этом Mac."
+          }
+        }
+      }
+    },
+    "Agenda, project facts, numbers, things not to forget. Drop or paste files here too.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Повестка, факты о проекте, цифры, что не забыть. Сюда можно перетащить или вставить файлы."
           }
         }
       }
@@ -383,6 +433,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ответ на вопрос"
+          }
+        }
+      }
+    },
+    "Any OpenAI-compatible API: Ollama, LM Studio, OpenRouter, Groq…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Любой API, совместимый с OpenAI: Ollama, LM Studio, OpenRouter, Groq…"
           }
         }
       }
@@ -483,6 +543,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Автоматически"
+          }
+        }
+      }
+    },
+    "Automatic (brief)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Автоматически (кратко)"
+          }
+        }
+      }
+    },
+    "Automatic effort: brief answers think briefly, detailed ones longer.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Автоматическая глубина: над краткими ответами модель думает недолго, над подробными — дольше."
           }
         }
       }
@@ -667,6 +747,16 @@
         }
       }
     },
+    "Check and Connect": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверить и подключить"
+          }
+        }
+      }
+    },
     "Check and Save": {
       "localizations": {
         "ru": {
@@ -707,6 +797,16 @@
         }
       }
     },
+    "Check that the server answers and list its models again": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверить, что сервер отвечает, и заново загрузить список моделей"
+          }
+        }
+      }
+    },
     "Checking for updates…": {
       "localizations": {
         "ru": {
@@ -723,16 +823,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Проверяю загрузку…"
-          }
-        }
-      }
-    },
-    "Checking the key…": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Проверяю ключ…"
           }
         }
       }
@@ -873,6 +963,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Закрыть"
+          }
+        }
+      }
+    },
+    "Connect a server under Settings → Model → Other.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подключите сервер в «Настройки → Модель → Другой»."
           }
         }
       }
@@ -1027,16 +1127,6 @@
         }
       }
     },
-    "DeepSeek is overloaded right now. Try again in a minute.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "DeepSeek сейчас перегружен. Попробуйте через минуту."
-          }
-        }
-      }
-    },
     "DeepSeek · %@": {
       "localizations": {
         "ru": {
@@ -1107,6 +1197,16 @@
         }
       }
     },
+    "Disconnect": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отключить"
+          }
+        }
+      }
+    },
     "Dismiss the error": {
       "localizations": {
         "ru": {
@@ -1157,12 +1257,22 @@
         }
       }
     },
-    "Estimated from DeepSeek’s list prices": {
+    "Enter the server address, for example http://localhost:11434/v1.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Оценка по прайсу DeepSeek"
+            "value": "Введите адрес сервера, например http://localhost:11434/v1."
+          }
+        }
+      }
+    },
+    "Estimated from the provider’s list prices": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оценка по прайсу провайдера"
           }
         }
       }
@@ -1237,12 +1347,32 @@
         }
       }
     },
+    "First listed model": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Первая модель в списке"
+          }
+        }
+      }
+    },
     "Forever": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Всегда"
+          }
+        }
+      }
+    },
+    "Free and open source under the GNU GPL v3.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Бесплатно, открытый код под лицензией GNU GPL v3."
           }
         }
       }
@@ -1363,6 +1493,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Подсказки"
+          }
+        }
+      }
+    },
+    "Hints have to arrive within seconds: a fast model with little or no thinking works best, such as Claude Haiku or DeepSeek Flash without thinking. Chats and meeting summaries keep the model above.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подсказки должны приходить за секунды: лучше всего быстрая модель с короткими размышлениями или без них, например Claude Haiku или DeepSeek Flash без размышлений. Чат и итоги встреч остаются на модели выше."
           }
         }
       }
@@ -1647,6 +1787,16 @@
         }
       }
     },
+    "Meeting hints and an assistant in the menu bar. Speech is recognized on this Mac.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подсказки на созвонах и ассистент в строке меню. Речь распознаётся на этом Mac."
+          }
+        }
+      }
+    },
     "Meeting in progress": {
       "localizations": {
         "ru": {
@@ -1727,12 +1877,32 @@
         }
       }
     },
+    "Model for Meeting Hints": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель для подсказок на созвоне"
+          }
+        }
+      }
+    },
     "Most capable, about four times the price of Flash": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Самая сильная, примерно вчетверо дороже Flash"
+          }
+        }
+      }
+    },
+    "Name": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Название"
           }
         }
       }
@@ -1907,6 +2077,16 @@
         }
       }
     },
+    "Not needed for a local server": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Для локального сервера не нужен"
+          }
+        }
+      }
+    },
     "Not started": {
       "localizations": {
         "ru": {
@@ -2067,6 +2247,16 @@
         }
       }
     },
+    "Other": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Другой"
+          }
+        }
+      }
+    },
     "Output tokens": {
       "localizations": {
         "ru": {
@@ -2137,6 +2327,26 @@
         }
       }
     },
+    "Presets": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Готовые"
+          }
+        }
+      }
+    },
+    "Provided “as is”, without warranty.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Предоставляется «как есть», без гарантий."
+          }
+        }
+      }
+    },
     "Provider": {
       "localizations": {
         "ru": {
@@ -2163,6 +2373,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Завершить Siri+"
+          }
+        }
+      }
+    },
+    "Reading %@…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Читаю %@…"
           }
         }
       }
@@ -2257,6 +2477,26 @@
         }
       }
     },
+    "Requests and tokens are counted on this Mac from Claude’s replies; the cost is an estimate at Anthropic’s list prices.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запросы и токены Siri+ считает на этом Mac по ответам Claude. Стоимость — оценка по прайсу Anthropic."
+          }
+        }
+      }
+    },
+    "Requests and tokens are counted on this Mac from the replies.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запросы и токены Siri+ считает на этом Mac по ответам сервера."
+          }
+        }
+      }
+    },
     "Requests use your ChatGPT subscription limits.": {
       "localizations": {
         "ru": {
@@ -2287,22 +2527,32 @@
         }
       }
     },
-    "Reset DeepSeek statistics?": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Сбросить статистику DeepSeek?"
-          }
-        }
-      }
-    },
     "Reset Statistics": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Сбросить статистику"
+          }
+        }
+      }
+    },
+    "Reset the statistics?": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сбросить статистику?"
+          }
+        }
+      }
+    },
+    "Same as above": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Как выше"
           }
         }
       }
@@ -2487,6 +2737,56 @@
         }
       }
     },
+    "Send the Summary": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отправить итоги"
+          }
+        }
+      }
+    },
+    "Send the title, participants, summary and tasks by Mail, to Notes, Messages, Telegram or another app": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отправить название, участников, итоги и задачи по почте, в Заметки, Сообщения, Telegram или другое приложение"
+          }
+        }
+      }
+    },
+    "Separate model for hints": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отдельная модель для подсказок"
+          }
+        }
+      }
+    },
+    "Server": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сервер"
+          }
+        }
+      }
+    },
+    "Server address": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Адрес сервера"
+          }
+        }
+      }
+    },
     "Settings": {
       "localizations": {
         "ru": {
@@ -2543,6 +2843,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Показать файл M4A в Finder"
+          }
+        }
+      }
+    },
+    "Shown in the status line": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Показывается в строке статуса"
           }
         }
       }
@@ -2937,6 +3247,16 @@
         }
       }
     },
+    "Support development:": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Поддержать разработку:"
+          }
+        }
+      }
+    },
     "Switch Siri+ on in this list, then come back. If it is already on, switch it off and on again: macOS treats every new build as a new app.": {
       "localizations": {
         "ru": {
@@ -3063,6 +3383,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "История чатов не сохранена. %@"
+          }
+        }
+      }
+    },
+    "The counted requests and tokens are deleted from this Mac. Nothing changes with the provider.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подсчитанные запросы и токены удалятся с этого Mac. У провайдера ничего не изменится."
           }
         }
       }
@@ -3217,12 +3547,52 @@
         }
       }
     },
+    "The model name as the server knows it": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Название модели, как его знает сервер"
+          }
+        }
+      }
+    },
     "The release has no disk image for this Mac.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "В релизе нет образа для этого Mac."
+          }
+        }
+      }
+    },
+    "The server did not accept the key. Check it, or leave the field empty for a server without one.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сервер не принял ключ. Проверьте его или оставьте поле пустым, если сервер работает без ключа."
+          }
+        }
+      }
+    },
+    "The server is overloaded right now. Try again in a minute.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сервер сейчас перегружен. Попробуйте через минуту."
+          }
+        }
+      }
+    },
+    "The server lists no models. Enter a model name in Settings.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сервер не вернул ни одной модели. Введите название модели в настройках."
           }
         }
       }
@@ -3263,6 +3633,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Модель распознавания речи не сообщила формат звука."
+          }
+        }
+      }
+    },
+    "The text of the files is added to the meeting notes. Pictures, audio and video are recognized on this Mac.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Текст файлов добавится в заметки встречи. Картинки, аудио и видео распознаются на этом Mac."
           }
         }
       }
@@ -3467,6 +3847,16 @@
         }
       }
     },
+    "Usage": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расход"
+          }
+        }
+      }
+    },
     "Usage Limits": {
       "localizations": {
         "ru": {
@@ -3483,6 +3873,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Расход на сайте DeepSeek"
+          }
+        }
+      }
+    },
+    "Usage on OpenAI": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расход на сайте OpenAI"
           }
         }
       }

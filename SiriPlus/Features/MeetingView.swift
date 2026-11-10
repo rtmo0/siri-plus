@@ -7,6 +7,8 @@ struct MeetingView: View {
     let isModelReady: Bool
     let showPanel: () -> Void
     let openSettings: () -> Void
+    @FocusState private var isNotesFocused: Bool
+    @State private var isNotesDropTargeted = false
 
     var body: some View {
         HStack(spacing: 0) {
@@ -211,16 +213,29 @@ struct MeetingView: View {
 
     private var notesEditor: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label("Meeting notes", systemImage: "note.text")
-                .font(.subheadline.weight(.semibold))
-                .help("Agenda, project facts, numbers, things not to forget. They make hints more accurate; names and terms from here also help speech recognition when the meeting starts.")
+            HStack(spacing: 6) {
+                Label("Meeting notes", systemImage: "note.text")
+                    .font(.subheadline.weight(.semibold))
+                    .help("Agenda, project facts, numbers, things not to forget. They make hints more accurate; names and terms from here also help speech recognition when the meeting starts.")
+                Spacer()
+                if !meeting.readingMaterials.isEmpty {
+                    ProgressView().controlSize(.small)
+                        .help("Reading \(meeting.readingMaterials.joined(separator: ", "))…")
+                }
+                Button("Add File…", systemImage: "paperclip", action: chooseMaterials)
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
+                    .help("Add the text of documents, pictures, audio or video to the notes. Everything is read on this Mac.")
+            }
             TextEditor(text: $meeting.notes)
                 .font(.callout)
                 .scrollContentBackground(.hidden)
                 .frame(minHeight: 60, maxHeight: 140)
+                .focused($isNotesFocused)
+                .pastesAttachments(isActive: isNotesFocused) { meeting.addMaterial($0) }
                 .overlay(alignment: .topLeading) {
                     if meeting.notes.isEmpty {
-                        Text("Agenda, project facts, numbers, things not to forget. They make hints more accurate.")
+                        Text("Agenda, project facts, numbers, things not to forget. Drop or paste files here too.")
                             .font(.callout)
                             .foregroundStyle(.tertiary)
                             .padding(.leading, 5)
@@ -230,6 +245,24 @@ struct MeetingView: View {
         }
         .padding(12)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .dropDestination(for: URL.self) { urls, _ in
+            meeting.addMaterials(urls)
+            return !urls.isEmpty
+        } isTargeted: { isNotesDropTargeted = $0 }
+        .overlay {
+            if isNotesDropTargeted {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(Color.accentColor, style: StrokeStyle(lineWidth: 2, dash: [6, 4]))
+            }
+        }
+    }
+
+    private func chooseMaterials() {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.message = String(localized: "The text of the files is added to the meeting notes. Pictures, audio and video are recognized on this Mac.")
+        if panel.runModal() == .OK { meeting.addMaterials(panel.urls) }
     }
 }
 

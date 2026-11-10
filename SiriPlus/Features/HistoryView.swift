@@ -158,6 +158,13 @@ private struct MeetingDetail: View {
                     .help("Ask questions about this meeting in the Assistant")
             }
             ToolbarItem {
+                ShareLink(item: record.markdown(includingTranscript: false), subject: Text(verbatim: record.displayTitle),
+                          preview: SharePreview(record.displayTitle)) {
+                    Label("Send the Summary", systemImage: "square.and.arrow.up")
+                }
+                .help("Send the title, participants, summary and tasks by Mail, to Notes, Messages, Telegram or another app")
+            }
+            ToolbarItem {
                 Button("Copy the summary", systemImage: "doc.on.doc") {
                     NSPasteboard.general.clearContents()
                     NSPasteboard.general.setString(record.markdown(includingTranscript: false), forType: .string)

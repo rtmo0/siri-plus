@@ -99,6 +99,8 @@ struct ClaudeStreamDecoder {
 
     private var eventName: String?
     private var dataLines: [String] = []
+    /// Tokens the reply used so far: input from `message_start`, output from the latest `message_delta`.
+    private(set) var usage = TokenUsage()
 
     /// Feeds one line of the stream. Returns an event when a blank line completes one.
     mutating func consume(line: String) throws -> Event? {
@@ -120,7 +122,7 @@ struct ClaudeStreamDecoder {
         try consume(line: "")
     }
 
-    private func decode(_ data: String) throws -> Event? {
+    private mutating func decode(_ data: String) throws -> Event? {
         guard let object = try JSONSerialization.jsonObject(with: Data(data.utf8)) as? [String: Any],
               let type = object["type"] as? String else {
             throw ClaudeError.invalidResponse
@@ -130,7 +132,15 @@ struct ClaudeStreamDecoder {
             let delta = object["delta"] as? [String: Any]
             guard delta?["type"] as? String == "text_delta", let text = delta?["text"] as? String else { return nil }
             return .text(text)
+        case "message_start":
+            if let usage = (object["message"] as? [String: Any])?["usage"] as? [String: Any] {
+                self.usage = TokenUsage(claude: usage)
+            }
+            return nil
         case "message_delta":
+            if let output = ((object["usage"] as? [String: Any])?["output_tokens"] as? NSNumber)?.intValue {
+                usage.outputTokens = output
+            }
             let delta = object["delta"] as? [String: Any]
             if delta?["stop_reason"] as? String == "refusal" { throw ClaudeError.refused }
             return nil
@@ -143,7 +153,7 @@ struct ClaudeStreamDecoder {
                 message: error?["message"] as? String ?? "unknown error"
             )
         default:
-            // message_start, ping, content_block_start/stop (including thinking and
+            // ping, content_block_start/stop (including thinking and
             // server-side fallback markers) carry no user-visible text.
             return nil
         }
@@ -184,8 +194,8 @@ struct ClaudeClient: Sendable {
         }
     }
 
-    /// Streams text deltas of the reply.
-    func streamText(_ body: ClaudeMessagesRequest) -> AsyncThrowingStream<String, Error> {
+    /// Streams text deltas of the reply and reports the tokens it used once it ends.
+    func streamText(_ body: ClaudeMessagesRequest, onUsage: (@Sendable (TokenUsage) -> Void)? = nil) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
                 do {
@@ -217,6 +227,7 @@ struct ClaudeClient: Sendable {
                             continuation.yield(text)
                         }
                     }
+                    if decoder.usage.totalTokens > 0 { onUsage?(decoder.usage) }
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)
@@ -236,12 +247,13 @@ struct ClaudeClient: Sendable {
     }
 }
 
-/// Claude through the Claude API with an API key from the keychain.
+/// Claude through the Claude API with an API key from the keychain; every request's tokens go to the ledger.
 struct ClaudeAPIBackend: ModelBackend {
     let keyStore: any SecretStoring
+    var ledgers: UsageLedgers?
 
     func stream(_ prompt: PreparedPrompt, model: String) -> AsyncThrowingStream<String, Error> {
-        let keyStore = keyStore
+        let keyStore = keyStore, ledgers = ledgers
         let body = Self.body(for: prompt, model: model)
         return AsyncThrowingStream { continuation in
             let task = Task {
@@ -249,7 +261,8 @@ struct ClaudeAPIBackend: ModelBackend {
                     guard let key = try keyStore.read()?.trimmingCharacters(in: .whitespacesAndNewlines), !key.isEmpty else {
                         throw ClaudeError.missingAPIKey
                     }
-                    for try await text in ClaudeClient(apiKey: key).streamText(body) {
+                    let stream = ClaudeClient(apiKey: key).streamText(body) { ledgers?.record($0, provider: .claude, model: model) }
+                    for try await text in stream {
                         continuation.yield(text)
                     }
                     continuation.finish()

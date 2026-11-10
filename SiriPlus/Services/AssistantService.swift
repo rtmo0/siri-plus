@@ -194,6 +194,8 @@ struct CloudAssistantService: AssistantService, HintService, SummaryService {
     let openAIAPI: any ModelBackend
     let chatGPT: any ModelBackend
     let deepSeek: any ModelBackend
+    /// The "Other" provider's backend for the server address in the selection.
+    var custom: @Sendable (String) -> any ModelBackend = { _ in ChatCompletionsBackend(base: nil, keyStore: KeychainStore(account: "custom-api-key"), ledgers: UsageLedgers(directory: nil)) }
     var catalog = ModelCatalog()
 
     func reply(to request: AssistantRequest) -> AsyncThrowingStream<String, Error> {
@@ -216,11 +218,12 @@ struct CloudAssistantService: AssistantService, HintService, SummaryService {
         case .openAIAPI: openAIAPI
         case .chatGPT: chatGPT
         case .deepSeek: deepSeek
+        case .custom: custom(selection.customBaseURL)
         }
         let model = selection.model
         var prompt = prompt
         prompt.effort = prompt.effort.flatMap { preferred in
-            ModelEffort.resolve(chosen: selection.effort, preferred: preferred, isLive: prompt.isLive, supported: catalog.efforts(for: route, model: model))
+            ModelEffort.resolve(chosen: selection.effort, preferred: preferred, isLive: prompt.isLive && !selection.appliesEffortToHints, supported: catalog.efforts(for: route, model: model))
         }
         return backend.stream(prompt, model: model)
     }

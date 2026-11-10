@@ -25,7 +25,7 @@ struct ModelEditor: View {
                         }
                         .pickerStyle(.segmented)
                     }
-                    ConnectionRow(model: model, connection: profile.connection)
+                    ConnectionRow(model: model, connection: profile.connection, showsUsage: true)
                 }
                 Section {
                     let models = model.models(for: profile.route)

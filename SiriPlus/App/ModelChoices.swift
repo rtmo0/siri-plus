@@ -48,6 +48,25 @@ extension AppModel {
         return id
     }
 
+    /// A short line on what the model's sign-in or key has left or has used: "5h 99% · Week 59%",
+    /// "$4.20 · today 12 requests ≈ $0.031"; nil when there is nothing to say yet.
+    func usageSummary(of profile: ModelProfile) -> String? {
+        switch profile.connection {
+        case .claudeAccount: return usage.claude?.compactText
+        case .chatGPTAccount: return usage.chatGPT?.compactText
+        case .claudeKey, .openAIKey, .deepSeekKey, .server:
+            var parts: [String] = []
+            if profile.connection == .deepSeekKey, let balance = apiUsage.balance { parts.append(balance.formatted) }
+            let today = apiUsage.periods(for: profile.provider).today
+            if today.requests > 0 {
+                var text = String(localized: "today \(today.requests) requests")
+                if today.cost > 0 { text += " ≈ " + today.cost.formatted(.currency(code: "USD").precision(.fractionLength(today.cost < 1 ? 3 : 2))) }
+                parts.append(text)
+            }
+            return parts.isEmpty ? nil : parts.joined(separator: " · ")
+        }
+    }
+
     /// "Claude · Subscription · Automatic effort".
     func detail(of profile: ModelProfile) -> String {
         var parts = [preferences.providerName(profile.provider)]

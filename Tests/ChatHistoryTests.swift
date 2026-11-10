@@ -85,4 +85,24 @@ struct ChatHistoryTests {
         let history = ChatHistory(store: store) { AssistantPreferences(historyRetentionDays: 30) }
         #expect(history.conversations.isEmpty)
     }
+
+    @Test func chatsCanBeRenamedAndKeepTheirPlace() throws {
+        let store = ChatHistoryStore(url: FileManager.default.temporaryDirectory.appending(path: "chats-\(UUID().uuidString).json"))
+        let history = ChatHistory(store: store) { AssistantPreferences() }
+        let older = ChatConversation(messages: [ChatMessage(role: .user, text: "Как работает GC в Go?\nподробно")])
+        let newer = ChatConversation(messages: [ChatMessage(role: .user, text: "Привет")])
+        history.upsert(older)
+        history.upsert(newer)
+        #expect(history.conversation(older.id)?.title == "Как работает GC в Go?")
+
+        history.rename(older.id, to: "  Сборщик мусора  ")
+        #expect(history.conversation(older.id)?.title == "Сборщик мусора")
+        #expect(history.conversations.map(\.id) == [newer.id, older.id])
+        // The name survives a restart; an empty one shows the first question again.
+        #expect(ChatHistory(store: store) { AssistantPreferences() }.conversation(older.id)?.title == "Сборщик мусора")
+        history.rename(older.id, to: " ")
+        #expect(history.conversation(older.id)?.customTitle == nil)
+        #expect(history.conversation(older.id)?.title == "Как работает GC в Go?")
+    }
+
 }

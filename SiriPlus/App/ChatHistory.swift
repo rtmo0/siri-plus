@@ -37,6 +37,14 @@ final class ChatHistory: ObservableObject {
         save()
     }
 
+    /// Names the chat; an empty title goes back to the first question. The chat keeps its place in the list.
+    func rename(_ id: UUID, to title: String) {
+        guard let index = conversations.firstIndex(where: { $0.id == id }) else { return }
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        conversations[index].customTitle = trimmed.isEmpty ? nil : trimmed
+        save()
+    }
+
     func delete(_ id: UUID) {
         conversations.removeAll { $0.id == id }
         save()

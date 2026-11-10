@@ -1,6 +1,6 @@
 import Foundation
 
-/// A saved chat: its messages and, for display, a title from the first question.
+/// A saved chat: its messages and a title, the user's own or the first question.
 struct ChatConversation: Identifiable, Equatable, Codable, Sendable {
     var id = UUID()
     var createdAt = Date()
@@ -8,8 +8,11 @@ struct ChatConversation: Identifiable, Equatable, Codable, Sendable {
     var messages: [ChatMessage] = []
     /// The finished meeting this chat asks about, if any.
     var meetingID: UUID?
+    /// The name the user gave the chat; nil or empty shows the first question.
+    var customTitle: String?
 
     var title: String {
+        if let customTitle, !customTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return customTitle }
         let first = messages.first { $0.role == .user }
         let text = first?.text.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let line = text.split(whereSeparator: \.isNewline).first.map(String.init) ?? ""

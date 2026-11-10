@@ -16,6 +16,8 @@ struct HistoryView<Live: View>: View {
     @ViewBuilder let live: () -> Live
     @State private var selection: Selection = .live
     @State private var pendingDeletion: MeetingRecord?
+    @State private var renaming: MeetingRecord?
+    @State private var newTitle = ""
     @State private var query = ""
 
     private var visibleRecords: [MeetingRecord] { history.records.filter { $0.matches(query) } }
@@ -44,6 +46,13 @@ struct HistoryView<Live: View>: View {
         .onChange(of: history.records.first?.id) { _, id in if let id { selection = .record(id) } }
         .onChange(of: meeting.phase) { _, phase in if phase != .idle { selection = .live } }
         .searchable(text: $query, placement: .toolbar, prompt: Text("Search meetings"))
+        .alert("Rename the meeting", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } }), presenting: renaming) { record in
+            TextField("Title", text: $newTitle)
+            Button("Rename") { history.rename(record.id, to: newTitle) }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            Text("The title can also be changed at the top of the meeting.")
+        }
         .confirmationDialog(
             "Delete the meeting?",
             isPresented: Binding(get: { pendingDeletion != nil }, set: { if !$0 { pendingDeletion = nil } }),
@@ -81,6 +90,10 @@ struct HistoryView<Live: View>: View {
                     .padding(.vertical, 2)
                     .tag(Selection.record(record.id))
                     .contextMenu {
+                        Button("Rename…", systemImage: "pencil") {
+                            newTitle = record.title.isEmpty ? record.displayTitle : record.title
+                            renaming = record
+                        }
                         Button("Delete", systemImage: "trash", role: .destructive) { pendingDeletion = record }
                     }
                 }

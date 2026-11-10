@@ -91,12 +91,12 @@
         }
       }
     },
-    "%@ is not connected yet: sign in or add its key under Accounts and Keys.": {
+    "%@ is not connected yet: open it in the list above to sign in or add its key.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ ещё не подключена: войдите или добавьте ключ в разделе «Аккаунты и ключи»."
+            "value": "%@ ещё не подключена: откройте её в списке выше, чтобы войти или добавить ключ."
           }
         }
       }
@@ -337,16 +337,6 @@
         }
       }
     },
-    "Accounts and Keys": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Аккаунты и ключи"
-          }
-        }
-      }
-    },
     "Add": {
       "localizations": {
         "ru": {
@@ -417,12 +407,12 @@
         }
       }
     },
-    "Add each model you want to use: a subscription model, one with an API key, a local one. Then choose below what each one does.": {
+    "Add each model you want to use: a subscription model, one with an API key, a local one, and choose below what each one does. A model's window signs in, takes its key and shows its limits. Only your messages, a screenshot you take, and the latest part of the meeting transcript (when a hint is needed) go to the provider; with a local server nothing leaves the Mac.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Добавьте модели, которыми пользуетесь: по подписке, по API-ключу, локальную. Ниже выберите, что делает каждая."
+            "value": "Добавьте модели, которыми пользуетесь: по подписке, по API-ключу, локальную, и ниже выберите, что делает каждая. В окне модели можно войти, ввести ключ и посмотреть лимиты. Провайдеру уходят только ваши сообщения, снятый вами скриншот и последний фрагмент расшифровки встречи (когда нужна подсказка); с локальным сервером ничего не покидает Mac."
           }
         }
       }
@@ -1897,6 +1887,16 @@
         }
       }
     },
+    "Leave it empty to show the first question again.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оставьте пустым, чтобы снова показывался первый вопрос."
+          }
+        }
+      }
+    },
     "Let the participants know you use an assistant.": {
       "localizations": {
         "ru": {
@@ -2157,16 +2157,6 @@
         }
       }
     },
-    "Models of one provider share its sign-in or key. Only your messages, a screenshot you take, and the latest part of the meeting transcript (when a hint is needed) go to the provider; with a local server nothing leaves the Mac.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Модели одного провайдера используют общий вход или ключ. Провайдеру уходят только ваши сообщения, снятый вами скриншот и последний фрагмент расшифровки встречи (когда нужна подсказка); с локальным сервером ничего не покидает Mac."
-          }
-        }
-      }
-    },
     "Most capable, about four times the price of Flash": {
       "localizations": {
         "ru": {
@@ -2343,6 +2333,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Не сейчас"
+          }
+        }
+      }
+    },
+    "Not connected: open to sign in or add a key": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не подключена: откройте, чтобы войти или добавить ключ"
           }
         }
       }
@@ -2753,6 +2753,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Удалить"
+          }
+        }
+      }
+    },
+    "Rename": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Переименовать"
+          }
+        }
+      }
+    },
+    "Rename the chat": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Переименовать чат"
+          }
+        }
+      }
+    },
+    "Rename the meeting": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Переименовать встречу"
+          }
+        }
+      }
+    },
+    "Rename…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Переименовать…"
           }
         }
       }
@@ -3947,6 +3987,16 @@
         }
       }
     },
+    "The title can also be changed at the top of the meeting.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Название можно поменять и вверху карточки встречи."
+          }
+        }
+      }
+    },
     "The transcript and summary are removed from this Mac.": {
       "localizations": {
         "ru": {
@@ -4003,6 +4053,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Эта модель долго думает (%@): подсказки могут опаздывать. «Автоматически» держит их короткими."
+          }
+        }
+      }
+    },
+    "Title": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Название"
           }
         }
       }
@@ -4353,6 +4413,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "сброс %@ (%@)"
+          }
+        }
+      }
+    },
+    "today %lld requests": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "сегодня запросов: %lld"
           }
         }
       }

@@ -379,6 +379,8 @@ private struct ChatList: View {
     let query: String
 
     private var visible: [ChatConversation] { chats.conversations.filter { $0.matches(query) } }
+    @State private var renaming: ChatConversation?
+    @State private var newTitle = ""
 
     var body: some View {
         List(selection: Binding(get: { model.currentChatID }, set: { if let id = $0 { model.openChat(id) } })) {
@@ -399,9 +401,20 @@ private struct ChatList: View {
                 .padding(.vertical, 2)
                 .tag(conversation.id)
                 .contextMenu {
+                    Button("Rename…", systemImage: "pencil") {
+                        newTitle = conversation.customTitle ?? conversation.title
+                        renaming = conversation
+                    }
                     Button("Delete", systemImage: "trash", role: .destructive) { model.deleteChat(conversation.id) }
                 }
             }
+        }
+        .alert("Rename the chat", isPresented: Binding(get: { renaming != nil }, set: { if !$0 { renaming = nil } }), presenting: renaming) { conversation in
+            TextField("Title", text: $newTitle)
+            Button("Rename") { chats.rename(conversation.id, to: newTitle) }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            Text("Leave it empty to show the first question again.")
         }
         .overlay {
             if chats.conversations.isEmpty {

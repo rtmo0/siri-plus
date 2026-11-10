@@ -10,7 +10,6 @@ struct WorkspaceView: View {
                     .tag(tab)
             }
             .listStyle(.sidebar)
-            .safeAreaInset(edge: .bottom) { statusCapsule }
             .navigationSplitViewColumnWidth(min: 170, ideal: 190, max: 230)
         } detail: {
             Group {
@@ -46,39 +45,6 @@ struct WorkspaceView: View {
         .frame(minWidth: 820, minHeight: 480)
         .tint(.indigo)
         .task { await model.refreshAccounts() }
-    }
-
-    /// One line: what the assistant is connected to, or that a meeting is being recorded.
-    private var statusCapsule: some View {
-        Group {
-            if model.meeting.isRunning {
-                Label("Meeting in progress", systemImage: "record.circle")
-                    .foregroundStyle(.red)
-            } else if model.isModelReady {
-                if let usage = model.usage.usage(for: model.preferences.selection), let compact = usage.compactText {
-                    Label("\(model.providerName) · \(compact)", systemImage: "gauge.with.dots.needle.50percent")
-                        .foregroundStyle(usage.limits.contains { $0.remainingPercent < 10 } ? .red : .green)
-                        .help(usage.limits.map(\.summary).joined(separator: "\n"))
-                } else if model.preferences.model(for: .chat).provider == .deepSeek, let balance = model.apiUsage.balance {
-                    Label("DeepSeek · \(balance.formatted)", systemImage: "creditcard")
-                        .foregroundStyle(balance.isAvailable ? .green : .red)
-                        .help("DeepSeek balance")
-                } else {
-                    Label("\(model.providerName) connected", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
-                }
-            } else {
-                Label("Sign-in required", systemImage: "exclamationmark.circle.fill")
-                    .foregroundStyle(.orange)
-            }
-        }
-        .font(.caption.weight(.medium))
-        .lineLimit(1)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .glassEffect(.regular, in: Capsule())
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(10)
     }
 
     private func errorBanner(_ error: String) -> some View {

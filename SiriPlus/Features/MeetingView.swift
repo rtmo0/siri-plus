@@ -100,6 +100,13 @@ struct MeetingView: View {
                         .padding(.horizontal, 10).padding(.vertical, 5)
                         .glassEffect()
                         .help("Let the participants know you use an assistant.")
+                        if meeting.missesOtherSide {
+                            Label("The other side is not heard: try “All system audio”", systemImage: "speaker.slash")
+                                .lineLimit(1)
+                                .padding(.horizontal, 10).padding(.vertical, 5)
+                                .glassEffect(.regular.tint(.orange.opacity(0.2)))
+                                .help("Nothing has come from the call audio for half a minute while you talk. A browser call is heard best with “All system audio”.")
+                        }
                         if meeting.playsAloud {
                             Label("Sound is on the speakers: use headphones", systemImage: "headphones")
                                 .lineLimit(1)

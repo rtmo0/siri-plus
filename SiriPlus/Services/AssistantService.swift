@@ -16,6 +16,8 @@ protocol AssistantService: Sendable {
 struct HintRequest: Sendable, Equatable {
     enum Trigger: Sendable, Equatable {
         case question(String)
+        /// A question the user asked aloud, with "Hints on my questions" on.
+        case ownQuestion(String)
         case topic
         case manual
     }
@@ -25,6 +27,8 @@ struct HintRequest: Sendable, Equatable {
     let notes: String
     let previousHints: [String]
     let selection: ModelSelection
+    /// Terms from the glossaries, and how recognition may mishear them.
+    var vocabulary = ""
 }
 
 protocol HintService: Sendable {
@@ -36,6 +40,8 @@ struct SummaryRequest: Sendable, Equatable {
     let transcript: String
     let notes: String
     let selection: ModelSelection
+    /// Terms from the glossaries, and how recognition may mishear them.
+    var vocabulary = ""
 }
 
 protocol SummaryService: Sendable {
@@ -114,7 +120,7 @@ enum AssistantPrompts {
 
     static func hint(_ request: HintRequest, language: String = systemLanguageName) -> PreparedPrompt {
         PreparedPrompt(
-            system: hintSystem(notes: request.notes, language: language),
+            system: hintSystem(notes: request.notes, vocabulary: request.vocabulary, language: language),
             turns: [.init(role: .user, text: hintUser(request))],
             effort: "low",
             maxTokens: 4_000,
@@ -123,7 +129,7 @@ enum AssistantPrompts {
         )
     }
 
-    static func hintSystem(notes: String, language: String = systemLanguageName) -> String {
+    static func hintSystem(notes: String, vocabulary: String = "", language: String = systemLanguageName) -> String {
         var prompt = """
         You are the user's discreet assistant during a work call in Zoom, Teams or a similar app. The user glances at your hint while listening to the other side, so they have two or three seconds to read it.
 
@@ -131,13 +137,16 @@ enum AssistantPrompts {
         - In the language of the conversation (if it is unclear, in \(language)), very briefly: at most three bullet points, one line each.
         - Get straight to the point: what to answer or say. No preamble, do not restate the question.
         - When it fits, give something concrete: a fact, a number, an argument, or a clarifying question to ask.
-        - The transcript is automatic and has no punctuation; it contains recognition errors, so reconstruct the meaning from context. "Me" is the user, "Them" are the other participants.
+        - The transcript is automatic and has no punctuation; it contains recognition errors, so reconstruct the meaning from context. Technical terms and names are often misheard (for example "губерни" for Kubernetes, "горбач коллектор" for garbage collector): read them as meant and write them correctly. "Me" is the user, "Them" are the other participants.
         - Do not invent facts about the user, their company or project that are not in the materials. If facts are missing, suggest how to phrase a general answer.
         - If no hint is needed right now (no question and nothing to add on the topic), reply with the single character "—".
         """
         let trimmed = notes.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
             prompt += "\n\nThe user's materials for this meeting:\n<materials>\n\(trimmed)\n</materials>"
+        }
+        if !vocabulary.isEmpty {
+            prompt += "\n\nTerms that may come up in this call:\n<vocabulary>\n\(vocabulary)\n</vocabulary>"
         }
         return prompt
     }
@@ -152,6 +161,8 @@ enum AssistantPrompts {
         switch request.trigger {
         case .question(let question):
             prompt += "The other side seems to have asked: \"\(question)\". Suggest what to answer."
+        case .ownQuestion(let question):
+            prompt += "The user asked aloud: \"\(question)\". Give the gist of the answer so they can check it or carry on."
         case .topic:
             prompt += "Give a hint on the current topic: what would be useful to say, ask or clarify."
         case .manual:
@@ -162,7 +173,7 @@ enum AssistantPrompts {
 
     static func summary(_ request: SummaryRequest, language: String = systemLanguageName) -> PreparedPrompt {
         var system = """
-        You summarize a finished work call from its automatic transcript. The transcript has no punctuation and contains recognition errors, so reconstruct the meaning from context. "Me" is the user, "Them" are the other participants.
+        You summarize a finished work call from its automatic transcript. The transcript has no punctuation and contains recognition errors, so reconstruct the meaning from context. Technical terms, product names and names of people are often misheard (for example "губерни" for Kubernetes, "горбач коллектор" for garbage collector, "наряд ныть" for React Native): write them as they were meant, never as misheard. "Me" is the user, "Them" are the other participants.
 
         Write in the language of the conversation (if it is unclear, in \(language)). Reply exactly in this format, without Markdown headings:
         TITLE: three to seven words naming what the meeting was about
@@ -177,6 +188,9 @@ enum AssistantPrompts {
         let notes = request.notes.trimmingCharacters(in: .whitespacesAndNewlines)
         if !notes.isEmpty {
             system += "\n\nThe user's materials for this meeting:\n<materials>\n\(notes)\n</materials>"
+        }
+        if !request.vocabulary.isEmpty {
+            system += "\n\nTerms that may come up in this call:\n<vocabulary>\n\(request.vocabulary)\n</vocabulary>"
         }
         return PreparedPrompt(
             system: system,

@@ -157,6 +157,8 @@ final class AppModel: ObservableObject {
     let voice: VoiceInput
     let permissions = PermissionCenter()
     let usage: UsageModel
+    /// Glossaries for speech recognition and for restoring misheard terms.
+    let glossaries: GlossaryLibrary
     /// Requests and tokens of API keys and servers, and the DeepSeek balance.
     let apiUsage: APIUsageModel
     /// Shows the floating hint panel; set by the app scene.
@@ -183,8 +185,10 @@ final class AppModel: ObservableObject {
         microphoneUsage: any MicrophoneUsageSource = CoreAudioMicrophoneUsage(),
         updateChecker: any UpdateChecking = GitHubUpdateChecker(),
         meetingTiming: MeetingModel.Timing = MeetingModel.Timing(),
-        usageLedgers: UsageLedgers = UsageLedgers()
+        usageLedgers: UsageLedgers = UsageLedgers(),
+        glossaries: GlossaryLibrary = GlossaryLibrary()
     ) {
+        self.glossaries = glossaries
         let catalog = ModelCatalog()
         let assistant = assistant ?? CloudAssistantService(
             claudeAPI: ClaudeAPIBackend(keyStore: credentials.claudeKey, ledgers: usageLedgers),
@@ -206,10 +210,12 @@ final class AppModel: ObservableObject {
         self.preferences = preferences
         PanelCapture.isHidden = preferences.hidesPanelsFromCapture
         var currentPreferences: () -> AssistantPreferences = { preferences }
-        meeting = MeetingModel(service: meetingService, hintService: assistant, timing: meetingTiming, recordingURL: historyStore.recordingURL(for:)) {
+        meeting = MeetingModel(service: meetingService, hintService: assistant, timing: meetingTiming, recordingURL: historyStore.recordingURL(for:),
+                               vocabulary: { glossaries.activeTerms(currentPreferences()) }) {
             currentPreferences()
         }
-        history = MeetingHistory(store: historyStore, summaries: assistant) { currentPreferences() }
+        history = MeetingHistory(store: historyStore, summaries: assistant,
+                                 vocabulary: { glossaries.activeTerms(currentPreferences()).promptText }) { currentPreferences() }
         chats = ChatHistory(store: chatStore) { currentPreferences() }
         callMonitor = CallMonitor(meeting: meeting, usage: microphoneUsage) { currentPreferences().offersMeetingStart }
         updates = UpdateModel(checker: updateChecker) { currentPreferences().checksForUpdates }
@@ -229,7 +235,7 @@ final class AppModel: ObservableObject {
         if !preferences.customBaseURL.isEmpty { accounts.keys[.custom] = .unchecked }
         meeting.onFinish = { [history] in history.add($0) }
         // Views observing the app model also follow meeting and history state (menu bar icon, sidebar badge, errors).
-        meetingChanges = meeting.objectWillChange.merge(with: history.objectWillChange, voice.objectWillChange, permissions.objectWillChange, chats.objectWillChange, usage.objectWillChange, apiUsage.objectWillChange)
+        meetingChanges = meeting.objectWillChange.merge(with: history.objectWillChange, voice.objectWillChange, permissions.objectWillChange, chats.objectWillChange, usage.objectWillChange, apiUsage.objectWillChange, glossaries.objectWillChange)
             .sink { [weak self] in self?.objectWillChange.send() }
     }
 

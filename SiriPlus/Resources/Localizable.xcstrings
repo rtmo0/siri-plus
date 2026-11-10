@@ -31,6 +31,16 @@
         }
       }
     },
+    "%@ could not be read as text.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не удалось прочитать %@ как текст."
+          }
+        }
+      }
+    },
     "%@ could not be read.": {
       "localizations": {
         "ru": {
@@ -57,6 +67,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "В %@ нет звука для расшифровки."
+          }
+        }
+      }
+    },
+    "%@ has no terms: put one term on each line.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В %@ нет терминов: пишите по одному термину в строке."
           }
         }
       }
@@ -207,6 +227,16 @@
         }
       }
     },
+    "%lld terms": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Терминов: %lld"
+          }
+        }
+      }
+    },
     "%lld%% left": {
       "localizations": {
         "ru": {
@@ -323,6 +353,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Добавьте ключ API DeepSeek в настройках."
+          }
+        }
+      }
+    },
+    "Add a text or CSV file with one term per line": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавить текстовый или CSV-файл, по одному термину в строке"
           }
         }
       }
@@ -1177,6 +1217,16 @@
         }
       }
     },
+    "Delete this glossary": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Удалить этот словарь"
+          }
+        }
+      }
+    },
     "Detailed": {
       "localizations": {
         "ru": {
@@ -1427,6 +1477,26 @@
         }
       }
     },
+    "Glossary files": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Файлы словарей"
+          }
+        }
+      }
+    },
+    "Glossary files can be added and edited in this folder": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "В этой папке словари можно добавлять и править"
+          }
+        }
+      }
+    },
     "Help me with a question": {
       "localizations": {
         "ru": {
@@ -1497,12 +1567,32 @@
         }
       }
     },
+    "Hints (%lld)": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подсказки (%lld)"
+          }
+        }
+      }
+    },
     "Hints have to arrive within seconds: a fast model with little or no thinking works best, such as Claude Haiku or DeepSeek Flash without thinking. Chats and meeting summaries keep the model above.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Подсказки должны приходить за секунды: лучше всего быстрая модель с короткими размышлениями или без них, например Claude Haiku или DeepSeek Flash без размышлений. Чат и итоги встреч остаются на модели выше."
+          }
+        }
+      }
+    },
+    "Hints on my questions too": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подсказки и на мои вопросы"
           }
         }
       }
@@ -1523,6 +1613,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Если Siri+ в Системных настройках уже включена, выключите и снова включите её: macOS считает каждую новую сборку новым приложением."
+          }
+        }
+      }
+    },
+    "Import…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Импортировать…"
           }
         }
       }
@@ -1897,6 +1997,16 @@
         }
       }
     },
+    "My terms": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Мои термины"
+          }
+        }
+      }
+    },
     "Name": {
       "localizations": {
         "ru": {
@@ -2107,6 +2217,16 @@
         }
       }
     },
+    "Nothing has come from the call audio for half a minute while you talk. A browser call is heard best with “All system audio”.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Полминуты, пока вы говорите, из звука звонка ничего не слышно. Звонок в браузере лучше всего слышен с источником «Весь системный звук»."
+          }
+        }
+      }
+    },
     "OK": {
       "localizations": {
         "ru": {
@@ -2183,6 +2303,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Локальное распознавание для %@ недоступно на этом Mac. Выберите другой язык в Настройках."
+          }
+        }
+      }
+    },
+    "One term per line. After “|”, how the term may be misheard, comma-separated.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "По одному термину в строке. После «|» через запятую — как термин может ослышаться."
           }
         }
       }
@@ -3237,6 +3367,16 @@
         }
       }
     },
+    "Suggest answers to questions you ask aloud as well, not only the other side's: for practice, or a meeting you lead.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подсказывать ответы и на вопросы, которые задаёте вы, а не только собеседники: для тренировки или если встречу ведёте вы."
+          }
+        }
+      }
+    },
     "Summary": {
       "localizations": {
         "ru": {
@@ -3293,6 +3433,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Откроется Терминал со входом Claude Code — завершите его в браузере. Siri+ сама заметит, что вы вошли."
+          }
+        }
+      }
+    },
+    "Terms help speech recognition and let the model restore misheard words in hints and summaries. A file has one term per line; “Kubernetes | кубер, губерни” also says how the term may be misheard. Names and terms from the meeting notes are used too.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Термины помогают распознаванию речи, а модель по ним исправляет ослышки в подсказках и итогах. В файле — по одному термину в строке; «Kubernetes | кубер, губерни» ещё и подсказывает, как термин может ослышаться. Имена и термины из заметок встречи тоже учитываются."
           }
         }
       }
@@ -3553,6 +3703,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Название модели, как его знает сервер"
+          }
+        }
+      }
+    },
+    "The other side is not heard: try “All system audio”": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Собеседников не слышно: попробуйте «Весь системный звук»"
           }
         }
       }
@@ -3883,6 +4043,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Расход на сайте OpenAI"
+          }
+        }
+      }
+    },
+    "Vocabulary": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Словарь"
           }
         }
       }

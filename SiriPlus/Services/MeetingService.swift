@@ -36,6 +36,14 @@ struct MeetingAudioSource: Identifiable, Hashable, Sendable {
         return [.system] + calls + others
     }
 
+    /// Bundle identifier prefixes of the processes that play an app's audio when they differ from its own.
+    static func audioHelpers(of id: String) -> [String] {
+        switch id {
+        case "com.apple.Safari", "com.apple.SafariTechnologyPreview": ["com.apple.WebKit."]
+        default: []
+        }
+    }
+
     /// The running call app if there is one, otherwise all system audio.
     @MainActor
     static func preferred(in sources: [MeetingAudioSource]) -> MeetingAudioSource {
@@ -562,8 +570,11 @@ final class MeetingAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate, @un
             filter = SCContentFilter(display: display, excludingApplications: ownApplications, exceptingWindows: [])
         } else {
             // Browsers and Teams play call audio from helper processes with derived bundle identifiers.
-            let applications = content.applications.filter {
-                $0.bundleIdentifier == source.id || $0.bundleIdentifier.hasPrefix(source.id + ".")
+            // Safari plays it from WebKit's own processes ("Safari Graphics and Media"), which share no prefix.
+            let helpers = MeetingAudioSource.audioHelpers(of: source.id)
+            let applications = content.applications.filter { app in
+                app.bundleIdentifier == source.id || app.bundleIdentifier.hasPrefix(source.id + ".")
+                    || helpers.contains { app.bundleIdentifier.hasPrefix($0) }
             }
             guard !applications.isEmpty else { throw MeetingError.appNotRunning(source.name) }
             filter = SCContentFilter(display: display, including: applications, exceptingWindows: [])

@@ -48,6 +48,8 @@ final class MeetingModel: ObservableObject {
         var topicWords = 70
         /// Minimum seconds between automatic topic hints.
         var topicInterval: TimeInterval = 45
+        /// How long the user may talk with nothing heard from the other side before the meeting screen says so.
+        var silentOtherSideDelay: TimeInterval = 30
     }
 
     @Published private(set) var phase: Phase = .idle
@@ -61,6 +63,9 @@ final class MeetingModel: ObservableObject {
     @Published private(set) var sources: [MeetingAudioSource] = [.system]
     @Published var selectedSourceID = MeetingAudioSource.system.id
     @Published var notes = ""
+    /// The user has been talking for a while and nothing has been heard from the other side:
+    /// the audio source is probably wrong, or the call is not playing.
+    @Published private(set) var missesOtherSide = false
     /// Files whose text is still being read into the notes.
     @Published private(set) var readingMaterials: [String] = []
     @Published var errorMessage: String?
@@ -70,7 +75,10 @@ final class MeetingModel: ObservableObject {
     private let service: any MeetingService
     private let hintService: any HintService
     private let preferences: () -> AssistantPreferences
+    /// The terms of the glossaries switched on in Settings.
+    private let vocabulary: () -> [Glossary.Term]
     private let timing: Timing
+    private var heardOtherSide = false
     /// Where a meeting's sound is saved; nil when this model never records.
     private let recordingURL: ((UUID) -> URL)?
     private var eventsTask: Task<Void, Never>?
@@ -87,8 +95,10 @@ final class MeetingModel: ObservableObject {
         hintService: any HintService,
         timing: Timing = Timing(),
         recordingURL: ((UUID) -> URL)? = nil,
+        vocabulary: @escaping () -> [Glossary.Term] = { [] },
         preferences: @escaping () -> AssistantPreferences
     ) {
+        self.vocabulary = vocabulary
         self.service = service
         self.hintService = hintService
         self.timing = timing
@@ -157,6 +167,8 @@ final class MeetingModel: ObservableObject {
         hints = []
         levels = [:]
         playsAloud = false
+        missesOtherSide = false
+        heardOtherSide = false
         answeredLength = [:]
         wordsAtLastHint = 0
         lastHintAt = Date()
@@ -171,7 +183,7 @@ final class MeetingModel: ObservableObject {
                 source: source,
                 locales: settings.speechLocales,
                 capturesMicrophone: settings.capturesMicrophone,
-                contextualStrings: MeetingConfiguration.contextualStrings(from: notes),
+                contextualStrings: vocabulary().recognitionStrings(after: MeetingConfiguration.contextualStrings(from: notes)),
                 recordingURL: audioURL
             ))
             guard phase == .starting else {
@@ -247,22 +259,31 @@ final class MeetingModel: ObservableObject {
             turn.volatileText = ""
             return turn
         }
-        onFinish?(MeetingRecord(id: id, startedAt: startedAt, endedAt: Date(), turns: turns, notes: notes))
+        let shown = hints.filter { !$0.isEmptyAnswer && $0.failure == nil }.map {
+            SavedHint(createdAt: $0.createdAt, question: $0.question, text: $0.text.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
+        onFinish?(MeetingRecord(id: id, startedAt: startedAt, endedAt: Date(), turns: turns, notes: notes, hints: shown))
     }
 
     private func handle(_ event: MeetingEvent) {
         switch event {
         case .level(let speaker, let level):
             levels[speaker] = level
+            if speaker == .them, level > 0.1 { hearOtherSide() }
         case .loudspeaker(let isLoud):
             playsAloud = isLoud
         case .recordingFailed(let message):
             errorMessage = String(localized: "The meeting audio was not saved. \(message)")
         case .segment(let segment):
             guard let turn = transcript.apply(segment), segment.isFinal else { return }
-            let mode = preferences().hintMode
-            if segment.speaker == .them, mode != .manual {
-                scheduleQuestionCheck(turnID: turn.id, chunk: segment.text)
+            let settings = preferences()
+            let mode = settings.hintMode
+            if segment.speaker == .them {
+                hearOtherSide()
+                if mode != .manual { scheduleQuestionCheck(turnID: turn.id, chunk: segment.text) }
+            } else {
+                noticeSilentOtherSide()
+                if mode != .manual, settings.hintsOnOwnQuestions { scheduleQuestionCheck(turnID: turn.id, chunk: segment.text, own: true) }
             }
             if mode == .questionsAndTopic {
                 considerTopicHint()
@@ -270,16 +291,28 @@ final class MeetingModel: ObservableObject {
         }
     }
 
-    private func scheduleQuestionCheck(turnID: UUID, chunk: String) {
+    private func hearOtherSide() {
+        heardOtherSide = true
+        missesOtherSide = false
+    }
+
+    /// Half a minute into the meeting with the user talking and nothing from the other side.
+    private func noticeSilentOtherSide() {
+        guard !heardOtherSide, !missesOtherSide, let since = recordingSince,
+              Date().timeIntervalSince(since) >= timing.silentOtherSideDelay else { return }
+        missesOtherSide = true
+    }
+
+    private func scheduleQuestionCheck(turnID: UUID, chunk: String, own: Bool = false) {
         questionTask?.cancel()
         questionTask = Task { [weak self, delay = timing.questionDelay] in
             try? await Task.sleep(for: delay)
             guard !Task.isCancelled else { return }
-            self?.checkForQuestion(turnID: turnID, chunk: chunk)
+            self?.checkForQuestion(turnID: turnID, chunk: chunk, own: own)
         }
     }
 
-    private func checkForQuestion(turnID: UUID, chunk: String) {
+    private func checkForQuestion(turnID: UUID, chunk: String, own: Bool = false) {
         // Still speaking: the next final result reschedules the check.
         guard let turn = transcript.turns.first(where: { $0.id == turnID }), turn.volatileText.isEmpty else { return }
         let answered = answeredLength[turnID] ?? 0
@@ -287,8 +320,8 @@ final class MeetingModel: ObservableObject {
         guard !unanswered.isEmpty,
               QuestionDetector.isLikelyQuestion(chunk) || QuestionDetector.isLikelyQuestion(unanswered) else { return }
         answeredLength[turnID] = turn.finalText.count
-        let words = unanswered.split(separator: " ")
-        requestHint(.question(words.suffix(40).joined(separator: " ")))
+        let words = unanswered.split(separator: " ").suffix(40).joined(separator: " ")
+        requestHint(own ? .ownQuestion(words) : .question(words))
     }
 
     private func considerTopicHint() {
@@ -302,7 +335,7 @@ final class MeetingModel: ObservableObject {
         let kind: MeetingHint.Kind
         let question: String?
         switch trigger {
-        case .question(let text): (kind, question) = (.question, text)
+        case .question(let text), .ownQuestion(let text): (kind, question) = (.question, text)
         case .topic: (kind, question) = (.topic, nil)
         case .manual: (kind, question) = (.manual, nil)
         }
@@ -315,7 +348,8 @@ final class MeetingModel: ObservableObject {
             transcript: transcript.recentText(characterLimit: 6_000),
             notes: notes,
             previousHints: hints.filter { !$0.isEmptyAnswer && $0.failure == nil }.suffix(3).map(\.text),
-            selection: settings.hintSelection
+            selection: settings.hintSelection,
+            vocabulary: vocabulary().promptText
         )
         let hint = MeetingHint(id: UUID(), kind: kind, question: question, createdAt: Date())
         hints.append(hint)

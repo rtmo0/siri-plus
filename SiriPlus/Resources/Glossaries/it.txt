@@ -1,0 +1,84 @@
+# title: IT and development
+# title.ru: IT и разработка
+# One term per line. After "|": how speech recognition tends to hear it, comma-separated.
+Kubernetes | кубернетес, кубернетис, губернетес, губерни, кубер
+k8s | кейтс, кэйтс
+Docker | докер
+Go | гоу, на го, в го
+Golang | голанг, гоуланг
+garbage collector | гарбидж коллектор, гарбич коллектор, горбач коллектор, сборщик гарбич
+goroutine | горутина, гарутина
+channel
+mutex | мьютекс, мютекс
+React | реакт
+React Native | реакт нейтив, наряд ныть, реакт натив
+Flutter | флаттер, флатер, flat
+Swift | свифт
+SwiftUI | свифт юай, свифт ю ай
+Kotlin | котлин
+TypeScript | тайпскрипт, тайп скрипт
+JavaScript | джаваскрипт, джава скрипт
+Node.js | нода, ноджиэс, нод джей эс
+Python | пайтон, питон
+Rust | раст
+Java | джава
+C++ | си плюс плюс
+PostgreSQL | постгрес, постгре, постгрескуэль
+MySQL | май эскуэль, майскуэль
+MongoDB | монга, монго
+Redis | редис
+Kafka | кафка
+RabbitMQ | рэббит, реббит эм кью
+ClickHouse | кликхаус, клик хаус
+Elasticsearch | эластик, эластиксерч
+gRPC | джи ар пи си, грпц
+REST | рест
+GraphQL | граф кью эль, графкуэль
+API | апи, эй пи ай
+SDK | эс ди кей
+backend | бэкенд, бекенд
+frontend | фронтенд, фронт
+microservices | микросервисы
+monolith | монолит
+CI/CD | си ай си ди, сиай сиди
+GitHub | гитхаб
+GitLab | гитлаб
+pull request | пул реквест, пулл реквест
+merge request | мерж реквест
+code review | код ревью
+deploy | деплой
+release | релиз
+rollback | роллбэк, откат
+Terraform | терраформ
+Ansible | ансибл
+Helm | хелм
+Prometheus | прометеус, прометей
+Grafana | графана
+Nginx | энджинкс, нджинкс, нгинкс
+Linux | линукс
+AWS | эй дабл ю эс
+Yandex Cloud | яндекс клауд
+load balancer | лоад балансер, балансировщик
+latency | латенси
+throughput | сруппут, сру пут
+SLA | эс эл эй
+DevOps | девопс
+SRE | эс ар и
+QA | кью эй
+unit tests | юнит тесты
+integration tests | интеграционные тесты
+refactoring | рефакторинг
+technical debt | техдолг
+legacy | легаси
+recursion | рекурсия
+BFS | би эф эс, поиск в ширину
+DFS | ди эф эс, поиск в глубину
+hash map | хэшмап, хеш мап
+binary search | бинарный поиск
+big O | биг о, о большое
+SOLID | солид
+dependency injection | ди ай, инъекция зависимостей
+LLM | эл эл эм
+ChatGPT | чат джипити, чат гпт
+Claude | клод
+embedding | эмбеддинг

@@ -13,12 +13,16 @@ final class MeetingHistory: ObservableObject {
     private let store: MeetingHistoryStore
     private let summaries: any SummaryService
     private let preferences: () -> AssistantPreferences
+    /// The glossaries' prompt block for summaries.
+    private let vocabulary: () -> String
     /// False when an unreadable file could not be set aside: saving would overwrite it.
     private var canSave = true
 
-    init(store: MeetingHistoryStore, summaries: any SummaryService, preferences: @escaping () -> AssistantPreferences) {
+    init(store: MeetingHistoryStore, summaries: any SummaryService, vocabulary: @escaping () -> String = { "" },
+         preferences: @escaping () -> AssistantPreferences) {
         self.store = store
         self.summaries = summaries
+        self.vocabulary = vocabulary
         self.preferences = preferences
         do {
             records = try store.load()
@@ -88,7 +92,7 @@ final class MeetingHistory: ObservableObject {
         guard let record = records.first(where: { $0.id == id }), !summarizing.contains(id) else { return }
         summarizing.insert(id)
         summaryFailures[id] = nil
-        let request = SummaryRequest(transcript: record.promptTranscript, notes: record.notes, selection: preferences().selection)
+        let request = SummaryRequest(transcript: record.promptTranscript, notes: record.notes, selection: preferences().selection, vocabulary: vocabulary())
         Task { [weak self, summaries] in
             var reply = ""
             do {

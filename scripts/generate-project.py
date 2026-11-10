@@ -47,6 +47,10 @@ for catalog in ["Localizable.xcstrings", "InfoPlist.xcstrings", "AppShortcuts.xc
 assets = add("Assets.xcassets", isa="PBXFileReference", lastKnownFileType="folder.assetcatalog", path="Resources/Assets.xcassets", sourceTree="<group>")
 source_files.append(assets)
 resource_files.append(add("build:Assets.xcassets", isa="PBXBuildFile", fileRef=assets))
+# Built-in glossaries, copied as a folder: Contents/Resources/Glossaries/*.txt.
+glossaries = add("Glossaries", isa="PBXFileReference", lastKnownFileType="folder", path="Resources/Glossaries", sourceTree="<group>")
+source_files.append(glossaries)
+resource_files.append(add("build:Glossaries", isa="PBXBuildFile", fileRef=glossaries))
 source_files.append(add("SiriPlus.entitlements", isa="PBXFileReference", lastKnownFileType="text.plist.entitlements", path="Resources/SiriPlus.entitlements", sourceTree="<group>"))
 source_group = add("sourceGroup", isa="PBXGroup", children=source_files, path="SiriPlus", sourceTree="<group>")
 product = add("product", isa="PBXFileReference", explicitFileType="wrapper.application", includeInIndex="0", path="SiriPlus.app", sourceTree="BUILT_PRODUCTS_DIR")
@@ -113,7 +117,7 @@ for scope in ["project", "target", "widget"]:
                 "INFOPLIST_FILE": "SiriPlusWidget/Info.plist",
                 "CODE_SIGN_ENTITLEMENTS": "SiriPlusWidget/SiriPlusWidget.entitlements",
                 "GENERATE_INFOPLIST_FILE": "NO",
-                "MARKETING_VERSION": "0.5.1",
+                "MARKETING_VERSION": "0.5.2",
                 "CURRENT_PROJECT_VERSION": "1",
                 "CODE_SIGN_IDENTITY": "-",
                 "CODE_SIGN_STYLE": "Manual",
@@ -133,7 +137,7 @@ for scope in ["project", "target", "widget"]:
                 "INFOPLIST_FILE": "SiriPlus/Resources/Info.plist",
                 "CODE_SIGN_ENTITLEMENTS": "SiriPlus/Resources/SiriPlus.entitlements",
                 "GENERATE_INFOPLIST_FILE": "NO",
-                "MARKETING_VERSION": "0.5.1",
+                "MARKETING_VERSION": "0.5.2",
                 "CURRENT_PROJECT_VERSION": "1",
                 "CODE_SIGN_IDENTITY": "-",
                 "CODE_SIGN_STYLE": "Manual",

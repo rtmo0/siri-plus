@@ -140,6 +140,7 @@ private struct MeetingDetail: View {
                 }
                 summaryCard
                 if !record.tasks.isEmpty { tasksCard }
+                if !record.hints.isEmpty { hintsCard }
                 participantsField
                 Text("Transcript")
                     .font(.subheadline.weight(.semibold))
@@ -229,6 +230,38 @@ private struct MeetingDetail: View {
                     .lineSpacing(3)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
+        }
+        .padding(12)
+        .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    /// The hints shown during the meeting, folded until opened.
+    private var hintsCard: some View {
+        DisclosureGroup {
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(Array(record.hints.enumerated()), id: \.offset) { _, hint in
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 6) {
+                            Text(hint.createdAt.formatted(date: .omitted, time: .shortened))
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                            if let question = hint.question {
+                                Text(verbatim: "«\(question)»")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        Text(hint.text)
+                            .textSelection(.enabled)
+                    }
+                }
+            }
+            .padding(.top, 6)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } label: {
+            Label("Hints (\(record.hints.count))", systemImage: "lightbulb")
+                .font(.subheadline.weight(.semibold))
         }
         .padding(12)
         .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 16, style: .continuous))

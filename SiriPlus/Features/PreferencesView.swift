@@ -8,6 +8,7 @@ struct PreferencesView: View {
     @State private var serverAddress = ""
     @State private var serverName = ""
     @State private var confirmsClaudeSignOut = false
+    @State private var glossaryError: String?
 
     var body: some View {
         Form {
@@ -15,6 +16,7 @@ struct PreferencesView: View {
             usageSection
             hintModelSection
             meetingSection
+            vocabularySection
             conversationSection
             accessSection
             aboutSection
@@ -129,6 +131,106 @@ struct PreferencesView: View {
         }
     }
 
+    /// Glossaries that teach recognition the meeting's words and let the model restore the misheard ones.
+    private var vocabularySection: some View {
+        Section {
+            ForEach(model.glossaries.all) { glossary in
+                Toggle(isOn: glossaryBinding(glossary.id)) {
+                    HStack {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(verbatim: glossary.title)
+                            Text("\(glossary.terms.count) terms")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        if !glossary.isBuiltIn {
+                            Spacer()
+                            Button("Delete", systemImage: "trash", role: .destructive) {
+                                model.glossaries.delete(glossary.id)
+                                model.preferences.glossaries.remove(glossary.id)
+                            }
+                            .labelStyle(.iconOnly)
+                            .buttonStyle(.borderless)
+                            .help("Delete this glossary")
+                        }
+                    }
+                }
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                Text("My terms")
+                TextEditor(text: $model.preferences.customTerms)
+                    .font(.callout.monospaced())
+                    .frame(minHeight: 60, maxHeight: 120)
+                    .scrollContentBackground(.hidden)
+                    .padding(4)
+                    .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 6))
+                    .overlay(alignment: .topLeading) {
+                        if model.preferences.customTerms.isEmpty {
+                            Text(verbatim: "Kubernetes | кубер, губерни\nPayments API")
+                                .font(.callout.monospaced())
+                                .foregroundStyle(.tertiary)
+                                .padding(.horizontal, 9)
+                                .padding(.vertical, 4)
+                                .allowsHitTesting(false)
+                        }
+                    }
+            }
+            LabeledContent("Glossary files") {
+                HStack(spacing: 8) {
+                    Button("Import…", action: importGlossary)
+                        .buttonStyle(.glass)
+                        .help("Add a text or CSV file with one term per line")
+                    Button("Show in Finder", action: showGlossaryFolder)
+                        .buttonStyle(.glass)
+                        .help("Glossary files can be added and edited in this folder")
+                }
+            }
+            if let glossaryError {
+                Label(glossaryError, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+        } header: {
+            Label("Vocabulary", systemImage: "character.book.closed")
+        } footer: {
+            footnote("Terms help speech recognition and let the model restore misheard words in hints and summaries. A file has one term per line; “Kubernetes | кубер, губерни” also says how the term may be misheard. Names and terms from the meeting notes are used too.")
+        }
+        .onAppear { model.glossaries.reload() }
+    }
+
+    private func glossaryBinding(_ id: String) -> Binding<Bool> {
+        Binding(
+            get: { model.preferences.glossaries.contains(id) },
+            set: { isOn in
+                if isOn { model.preferences.glossaries.insert(id) } else { model.preferences.glossaries.remove(id) }
+            }
+        )
+    }
+
+    private func importGlossary() {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.allowedContentTypes = [.plainText, .commaSeparatedText, .text]
+        panel.message = String(localized: "One term per line. After “|”, how the term may be misheard, comma-separated.")
+        guard panel.runModal() == .OK else { return }
+        glossaryError = nil
+        for url in panel.urls {
+            do {
+                let glossary = try model.glossaries.importFile(url)
+                model.preferences.glossaries.insert(glossary.id)
+            } catch {
+                glossaryError = error.localizedDescription
+            }
+        }
+    }
+
+    private func showGlossaryFolder() {
+        guard let folder = model.glossaries.folder else { return }
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        NSWorkspace.shared.activateFileViewerSelecting([folder])
+    }
+
     /// A faster model for live hints, apart from the one that answers chats and writes summaries.
     private var hintModelSection: some View {
         Section {
@@ -187,6 +289,9 @@ struct PreferencesView: View {
                     Text(mode.title).tag(mode)
                 }
             }
+            Toggle("Hints on my questions too", isOn: $model.preferences.hintsOnOwnQuestions)
+                .help("Suggest answers to questions you ask aloud as well, not only the other side's: for practice, or a meeting you lead.")
+                .disabled(model.preferences.hintMode == .manual)
             Picker("Speech language", selection: $model.preferences.transcriptionLocale) {
                 Text("System (\(systemLanguageName))").tag(AssistantPreferences.systemLocale)
                 Text(verbatim: "English").tag("en-US")

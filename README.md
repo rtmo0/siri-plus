@@ -24,8 +24,9 @@ The interface is in English and Russian and follows the system language. Swift 6
 | ✅ | A separate, faster model for hints, if you like: chats and summaries keep the main one | model |
 | ✅ | Hint panel hidden from screen sharing | Mac |
 | ✅ | Offers to start listening when a call begins and to stop when it ends | Mac |
+| ✅ | Vocabularies: built-in IT and business glossaries, your own terms and imported files teach recognition the meeting's words, and the model fixes the misheard ones | Mac + model |
 | ✅ | Meeting materials (agenda, names, terms) help recognition and hints; add documents, pictures, audio or video and their text is read on the Mac | Mac + model |
-| ✅ | Meeting history: title, summary, action items with checkboxes, participants, full transcript | Mac + model |
+| ✅ | Meeting history: title, summary, action items with checkboxes, participants, the hints shown, full transcript | Mac + model |
 | ✅ | Optional call recording to M4A, played back in the history | Mac |
 | ✅ | Ask questions about a past meeting, export it to Markdown, send its summary by Mail, to Notes, Messages or Telegram | Mac + model |
 | ✅ | Siri-style ask panel on ⌃⌥Space with voice dictation | Mac + model |
@@ -64,11 +65,12 @@ First launch:
 
 ## Meetings
 
-- **Audio source.** A running call app is picked automatically. You can choose any other running app (for example a browser with Google Meet) or “All system audio”, which works with any call.
+- **Audio source.** A running call app is picked automatically. You can choose any other running app (for example a browser with Google Meet) or “All system audio”, which works with any call. With Safari, the call audio comes from WebKit's “Safari Graphics and Media” process, which is captured along with Safari. When you have talked for half a minute and nothing came from the call, the meeting screen says so: the source is probably wrong.
 - **Your voice** comes from the microphone as a separate channel. Headphones are the most reliable. When the call plays through speakers (built-in, a display or AirPlay), the meeting screen says so, the microphone is not transcribed while the other side speaks unless you are clearly louder than their echo, and “Me” lines that nearly repeat them from the last 10 seconds are dropped. Words said over the other side may be lost then.
 - **Language.** “System” listens for your system languages and keyboard layouts at once. For each speaker, the language whose recognizer is clearly more confident over the first phrases is kept and the others stop. You can also fix the language in Settings.
 - **Materials.** The notes field next to the hints takes the agenda, facts and names. Drop files on it, paste them with ⌘V or use the paperclip: PDF, text and code are read, pictures and screenshots go through on-device text recognition, audio and video through on-device speech recognition, and the text is added to the notes (up to 40,000 characters per file).
-- **Hints** come after a question from the other side and about every 45 seconds while the conversation moves on, only on questions, or only on request (the Hint button or ⌃⌥Space). The model answers “—” when no hint is needed, and nothing is shown.
+- **Vocabulary.** On-device recognition mishears technical words (“губерни” for Kubernetes, “горбач коллектор” for garbage collector, “наряд ныть” for React Native). Settings → Vocabulary turns on the built-in glossaries (IT and development, Business and product), takes your own terms and imports text or CSV files. Recognition is given up to 150 of these terms (names and terms from the meeting notes first), and hints and summaries get the full list with known mishearings, so the model writes the terms correctly. A glossary file has one term per line; `Kubernetes | кубер, губерни` also says how a term may be misheard, and `# title: …` / `# title.ru: …` name it. Imported files live in `~/Library/Application Support/SiriPlus/Glossaries/`, where you can add and edit them in Finder.
+- **Hints** come after a question from the other side and about every 45 seconds while the conversation moves on, only on questions, or only on request (the Hint button or ⌃⌥Space). The model answers “—” when no hint is needed, and nothing is shown. With “Hints on my questions too”, questions you ask aloud get hints as well: for practice, or a meeting you lead. The hints shown stay with the meeting in the history and in its Markdown.
 - **Questions** are spotted locally by question words after a short pause, since on-device Russian recognition adds no punctuation.
 - **History.** After Stop, the meeting is saved on your Mac with a title, summary, action items and participants written by the model. The search covers everything, including the transcript. “Ask about meeting” opens a chat that answers from the transcript.
 - **Recording.** Off by default. With “Save meeting audio (M4A)” on, the call and your microphone are saved as one M4A file with the meeting (about 30–60 MB an hour) and play back in the history. The file is deleted with the meeting.

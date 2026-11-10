@@ -12,13 +12,16 @@ struct MeetingRecord: Identifiable, Codable, Equatable, Sendable {
     var tasks: [MeetingTask] = []
     let turns: [TranscriptTurn]
     let notes: String
+    /// The hints shown during the meeting, oldest first.
+    var hints: [SavedHint] = []
 
-    init(id: UUID = UUID(), startedAt: Date, endedAt: Date, turns: [TranscriptTurn], notes: String) {
+    init(id: UUID = UUID(), startedAt: Date, endedAt: Date, turns: [TranscriptTurn], notes: String, hints: [SavedHint] = []) {
         self.id = id
         self.startedAt = startedAt
         self.endedAt = endedAt
         self.turns = turns
         self.notes = notes
+        self.hints = hints
     }
 
     // Meetings saved by older versions lack the newer keys.
@@ -33,6 +36,7 @@ struct MeetingRecord: Identifiable, Codable, Equatable, Sendable {
         tasks = try container.decodeIfPresent([MeetingTask].self, forKey: .tasks) ?? []
         turns = try container.decode([TranscriptTurn].self, forKey: .turns)
         notes = try container.decode(String.self, forKey: .notes)
+        hints = try container.decodeIfPresent([SavedHint].self, forKey: .hints) ?? []
     }
 
     var displayTitle: String {
@@ -79,12 +83,28 @@ struct MeetingRecord: Identifiable, Codable, Equatable, Sendable {
         if includingTranscript, !materials.isEmpty {
             lines += ["", "## \(String(localized: "Materials"))", "", materials]
         }
+        if includingTranscript, !hints.isEmpty {
+            lines += ["", "## \(String(localized: "Hints"))", ""]
+            lines += hints.map { hint in
+                let time = hint.createdAt.formatted(date: .omitted, time: .shortened)
+                let question = hint.question.map { " «\($0)»" } ?? ""
+                return "- **\(time)**\(question)\n\n  " + hint.text.replacingOccurrences(of: "\n", with: "\n  ") + "\n"
+            }
+        }
         if includingTranscript {
             lines += ["", "## \(String(localized: "Transcript"))", ""]
             lines += turns.map { "**\($0.speaker.title)** (\($0.startedAt.formatted(date: .omitted, time: .shortened))): \($0.text)\n" }
         }
         return lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines) + "\n"
     }
+}
+
+/// A hint shown during a meeting, kept with it in the history.
+struct SavedHint: Codable, Equatable, Sendable {
+    let createdAt: Date
+    /// The question it answered, if a question triggered it.
+    var question: String?
+    let text: String
 }
 
 /// An action item from the meeting: who does what by when. Empty owner or due date means unknown.

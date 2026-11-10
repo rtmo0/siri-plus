@@ -204,6 +204,12 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
     /// Nil: hints use the model above.
     var hintModel: HintModelChoice?
     var hintMode: HintMode = .questionsAndTopic
+    /// Also suggest answers to questions the user asks aloud: for practice, or a meeting the user leads.
+    var hintsOnOwnQuestions = false
+    /// Glossaries switched on in Settings, by id: built-in ones ("it", "business") and imported files.
+    var glossaries: Set<String> = ["it"]
+    /// The user's own terms, one per line, in the glossary file format.
+    var customTerms = ""
     var transcriptionLocale = systemLocale
     var capturesMicrophone = true
     /// Saves each meeting's sound as M4A next to its transcript. Off by default: recording needs consent.
@@ -236,6 +242,9 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         customName: String = "",
         customModel: String = "",
         hintModel: HintModelChoice? = nil,
+        hintsOnOwnQuestions: Bool = false,
+        glossaries: Set<String> = ["it"],
+        customTerms: String = "",
         hintMode: HintMode = .questionsAndTopic,
         transcriptionLocale: String = systemLocale,
         capturesMicrophone: Bool = true,
@@ -262,6 +271,9 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         self.customName = customName
         self.customModel = customModel
         self.hintModel = hintModel
+        self.hintsOnOwnQuestions = hintsOnOwnQuestions
+        self.glossaries = glossaries
+        self.customTerms = customTerms
         self.hintMode = hintMode
         self.transcriptionLocale = transcriptionLocale
         self.capturesMicrophone = capturesMicrophone
@@ -296,6 +308,9 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         customName = try container.decodeIfPresent(String.self, forKey: .customName) ?? defaults.customName
         customModel = try container.decodeIfPresent(String.self, forKey: .customModel) ?? defaults.customModel
         hintModel = try? container.decodeIfPresent(HintModelChoice.self, forKey: .hintModel)
+        hintsOnOwnQuestions = try container.decodeIfPresent(Bool.self, forKey: .hintsOnOwnQuestions) ?? defaults.hintsOnOwnQuestions
+        glossaries = try container.decodeIfPresent(Set<String>.self, forKey: .glossaries) ?? defaults.glossaries
+        customTerms = try container.decodeIfPresent(String.self, forKey: .customTerms) ?? defaults.customTerms
         hintMode = (try? container.decodeIfPresent(HintMode.self, forKey: .hintMode)) ?? defaults.hintMode
         transcriptionLocale = try container.decodeIfPresent(String.self, forKey: .transcriptionLocale) ?? defaults.transcriptionLocale
         capturesMicrophone = try container.decodeIfPresent(Bool.self, forKey: .capturesMicrophone) ?? defaults.capturesMicrophone

@@ -1,0 +1,40 @@
+# title: Business and product
+# title.ru: Бизнес и продукт
+# One term per line. After "|": how speech recognition tends to hear it, comma-separated.
+roadmap | роадмап, роудмап
+backlog | бэклог, беклог
+sprint | спринт
+standup | стендап, стэндап
+retro | ретро
+MVP | эм ви пи, эмвипи
+KPI | кей пи ай, кипиай
+OKR | о кей ар, окээр
+ROI | ар о ай, рои
+CJM | си джей эм
+unit economics | юнит экономика
+churn | чёрн, черн
+retention | ретеншн, ретеншен
+conversion | конверсия
+funnel | воронка
+A/B test | аб тест, эй би тест
+product manager | продакт, продакт менеджер
+project manager | проджект, пм
+stakeholder | стейкхолдер
+deadline | дедлайн
+scope | скоуп, скоп
+estimate | эстимейт
+feature | фича
+onboarding | онбординг
+B2B | би ту би, бэ два бэ
+B2C | би ту си
+SaaS | саас, сас
+NDA | эн ди эй
+offer | оффер
+budget | бюджет
+quarter | квартал
+Q1 | ку один, первый квартал
+Jira | джира
+Confluence | конфлюенс
+Notion | ноушн, ноушен
+Figma | фигма
+Slack | слак

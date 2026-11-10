@@ -7,6 +7,7 @@ enum AboutPanel {
     static let support = URL(string: "https://boosty.to/rtm00")!
 
     static func show(version: String) {
+        let existing = Set(NSApp.windows.map(ObjectIdentifier.init))
         NSApp.activate()
         NSApp.orderFrontStandardAboutPanel(options: [
             .applicationName: "Siri+",
@@ -14,8 +15,24 @@ enum AboutPanel {
             .version: "",
             .credits: credits,
         ])
-        // The panel opens behind other apps' windows without this, as Siri+ has no Dock icon.
-        NSApp.windows.first { $0.className.contains("About") }?.orderFrontRegardless()
+        // macOS 26 may refuse to activate a menu bar app from its menu, and the panel then stays behind other
+        // apps' windows. As with the main window, it is found once it appears and lifted above the others.
+        Task { @MainActor in
+            for _ in 0..<20 {
+                let panel = NSApp.windows.first { !existing.contains(ObjectIdentifier($0)) && $0.isVisible }
+                    ?? NSApp.windows.first { $0.className.localizedCaseInsensitiveContains("about") }
+                if let panel {
+                    panel.level = .floating
+                    panel.orderFrontRegardless()
+                    panel.makeKeyAndOrderFront(nil)
+                    NSApp.activate()
+                    try? await Task.sleep(for: .milliseconds(300))
+                    panel.level = .normal
+                    return
+                }
+                try? await Task.sleep(for: .milliseconds(50))
+            }
+        }
     }
 
     private static var credits: NSAttributedString {

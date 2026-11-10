@@ -60,7 +60,7 @@ xattr -dr com.apple.quarantine /Applications/SiriPlus.app
 First launch:
 
 1. The ✦ icon appears in the menu bar.
-2. Settings → Model: choose Claude, ChatGPT, DeepSeek or Other and sign in, add a key or connect a server.
+2. Settings → Models: Claude Opus through a Claude subscription is already there; sign in, or add other models (ChatGPT, an API key, DeepSeek, a local server) and choose what each one does.
 3. Meeting → Start. macOS asks for screen and system audio recording and for the microphone.
 
 ## Meetings
@@ -88,6 +88,14 @@ Tell participants you use an assistant: recording a conversation without consent
 
 ## Models and sign-in
 
+Settings has four pages: **Models**, **Meetings**, **Vocabulary** and **General**.
+
+On **Models**, add each model you use with “Add Model…”: the provider, the sign-in (subscription or API key), the model, its effort and, if you like, a name. A provider that is not connected yet is signed in or given its key right in that window. The list shows each model, whether it is ready and what it does.
+
+**Use For** routes the work: one model for the chat and the ask panel, one for meeting hints, one for meeting summaries — the same model or three different ones. Hints have to arrive within seconds, so a fast model with little thinking suits them, for example DeepSeek Flash without thinking or Claude Haiku. A routed model's effort is sent as is, “no thinking” included; “Automatic” keeps hints brief and thinks longer on detailed answers. Settings warns when a routed model is not connected or thinks too long for hints.
+
+**Accounts and Keys** lists the sign-ins, keys and the server that models use; models of one provider share them. Each one unfolds its subscription limits or its request statistics. Settings from Siri+ 0.5.2 and earlier become models on first launch: the provider in use, plus the separate hint model if there was one.
+
 | Provider | Browser sign-in (default) | API key |
 | --- | --- | --- |
 | **Claude** | Through the official [Claude Code](https://code.claude.com/docs/en/setup): “Sign in to Claude” opens Terminal with `claude auth login`. Requests run through `claude -p` in safe mode (no tools, no saved sessions) and use your Pro/Max limits. | A key from [Claude Console](https://platform.claude.com/settings/keys); direct streaming requests to `api.anthropic.com`. |
@@ -103,11 +111,11 @@ The model list comes from your account: with a Claude sign-in, every model Claud
 
 **Effort** sets how long the model thinks before answering, from low to maximum. Settings shows only the levels the chosen model accepts. “Automatic” thinks briefly for brief answers and longer for detailed ones. Meeting hints always think briefly so they arrive in seconds.
 
-**Model for meeting hints.** Settings → Model for Meeting Hints → “Separate model for hints” picks another provider, model and effort just for live hints, for example DeepSeek Flash without thinking or Claude Haiku, while chats and meeting summaries keep the model above. The provider's sign-in or key is shared; a chosen effort is sent as is, “no thinking” included, and “Automatic” keeps hints brief.
+
 
 With an account sign-in, Siri+ shows what is left of your subscription limits and when they reset: in Settings, in the sidebar status line and in the menu bar menu. Claude limits come from `claude -p /usage`, ChatGPT limits from the account's usage endpoint.
 
-API keys have no subscription limits; they are billed per token. For a Claude, OpenAI or DeepSeek key and for an “Other” server, Settings → Usage shows what requests from this Mac used today, in 7 and in 30 days: requests, input and output tokens and, for Claude and DeepSeek, an estimated cost at list prices (DeepSeek's off-peak hours at half price). The counts come from the token usage each reply reports and stay in `~/Library/Application Support/SiriPlus/Usage/`. With DeepSeek, the account balance (from `GET /user/balance`) is shown too, and in the window's status line.
+API keys have no subscription limits; they are billed per token. For a Claude, OpenAI or DeepSeek key and for an “Other” server, Settings → Models → Accounts and Keys shows what requests from this Mac used today, in 7 and in 30 days: requests, input and output tokens and, for Claude and DeepSeek, an estimated cost at list prices (DeepSeek's off-peak hours at half price). The counts come from the token usage each reply reports and stay in `~/Library/Application Support/SiriPlus/Usage/`. With DeepSeek, the account balance (from `GET /user/balance`) is shown too, and in the window's status line.
 
 Subscription sign-in is for personal use on your own Mac.
 

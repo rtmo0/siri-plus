@@ -68,15 +68,6 @@ enum AIProvider: String, CaseIterable, Codable, Identifiable, Sendable {
     var offersAccountSignIn: Bool { self == .claude || self == .openAI }
 }
 
-/// A model chosen for live meeting hints, apart from the one that answers chats and writes summaries.
-/// The provider's sign-in is shared; only the model and its effort differ.
-struct HintModelChoice: Codable, Equatable, Sendable {
-    var provider: AIProvider
-    /// Empty uses the provider's model chosen above.
-    var model = ""
-    var effort = ModelEffort.automatic
-}
-
 enum AuthMethod: String, CaseIterable, Codable, Identifiable, Sendable {
     /// Browser sign-in to a Claude or ChatGPT account (subscription).
     case account
@@ -85,7 +76,7 @@ enum AuthMethod: String, CaseIterable, Codable, Identifiable, Sendable {
     var id: String { rawValue }
 
     var title: String {
-        self == .account ? String(localized: "Sign in with browser") : String(localized: "API key")
+        self == .account ? String(localized: "Subscription") : String(localized: "API key")
     }
 }
 
@@ -139,28 +130,6 @@ struct ModelSelection: Equatable, Sendable {
         case .custom: ModelEffort.automatic
         }
     }
-
-    /// This selection with another provider, its model and effort, for hints.
-    func replacing(with choice: HintModelChoice) -> ModelSelection {
-        var selection = self
-        selection.provider = choice.provider
-        selection.appliesEffortToHints = true
-        let model = choice.model
-        switch choice.provider {
-        case .claude:
-            if !model.isEmpty { selection.claudeModel = model }
-            selection.claudeEffort = choice.effort
-        case .openAI:
-            if !model.isEmpty { selection.openAIModel = model }
-            selection.openAIEffort = choice.effort
-        case .deepSeek:
-            if !model.isEmpty { selection.deepSeekModel = model }
-            selection.deepSeekEffort = choice.effort
-        case .custom:
-            if !model.isEmpty { selection.customModel = model }
-        }
-        return selection
-    }
 }
 
 enum HintMode: String, CaseIterable, Codable, Identifiable, Sendable {
@@ -185,24 +154,14 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
 
     var replyStyle: ReplyStyle = .brief
     var showTimestamps = true
-    var provider: AIProvider = .claude
-    /// The model Claude Code runs with a Claude account sign-in.
-    var claudeModel = "opus"
-    /// The model used with an Anthropic API key.
-    var claudeAPIModel = "claude-opus-5-5"
-    var claudeAuth: AuthMethod = .account
-    var claudeEffort = ModelEffort.automatic
-    var openAIModel = ""
-    var openAIAuth: AuthMethod = .account
-    var openAIEffort = ModelEffort.automatic
-    var deepSeekModel = ModelOption.deepSeekDefault.id
-    var deepSeekEffort = ModelEffort.automatic
+    /// The models the user added, in the order Settings lists them. Never empty.
+    var models: [ModelProfile] = [.starter]
+    /// Which model does what; a purpose without a route uses the first model.
+    var routes: [ModelPurpose: UUID] = [:]
+    /// The "Other" provider's OpenAI-compatible server, such as "http://localhost:11434/v1"; empty when none is connected.
     var customBaseURL = ""
-    /// The name shown for the "Other" provider, such as "Ollama"; empty shows the server's host.
+    /// The name shown for that server, such as "Ollama"; empty shows its host.
     var customName = ""
-    var customModel = ""
-    /// Nil: hints use the model above.
-    var hintModel: HintModelChoice?
     var hintMode: HintMode = .questionsAndTopic
     /// Also suggest answers to questions the user asks aloud: for practice, or a meeting the user leads.
     var hintsOnOwnQuestions = false
@@ -228,20 +187,10 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
     init(
         replyStyle: ReplyStyle = .brief,
         showTimestamps: Bool = true,
-        provider: AIProvider = .claude,
-        claudeModel: String = "opus",
-        claudeAPIModel: String = "claude-opus-5-5",
-        claudeAuth: AuthMethod = .account,
-        claudeEffort: String = ModelEffort.automatic,
-        openAIModel: String = "",
-        openAIAuth: AuthMethod = .account,
-        openAIEffort: String = ModelEffort.automatic,
-        deepSeekModel: String = ModelOption.deepSeekDefault.id,
-        deepSeekEffort: String = ModelEffort.automatic,
+        models: [ModelProfile] = [.starter],
+        routes: [ModelPurpose: UUID] = [:],
         customBaseURL: String = "",
         customName: String = "",
-        customModel: String = "",
-        hintModel: HintModelChoice? = nil,
         hintsOnOwnQuestions: Bool = false,
         glossaries: Set<String> = ["it"],
         customTerms: String = "",
@@ -257,20 +206,10 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
     ) {
         self.replyStyle = replyStyle
         self.showTimestamps = showTimestamps
-        self.provider = provider
-        self.claudeModel = claudeModel
-        self.claudeAPIModel = claudeAPIModel
-        self.claudeAuth = claudeAuth
-        self.claudeEffort = claudeEffort
-        self.openAIModel = openAIModel
-        self.openAIAuth = openAIAuth
-        self.openAIEffort = openAIEffort
-        self.deepSeekModel = deepSeekModel
-        self.deepSeekEffort = deepSeekEffort
+        self.models = models.isEmpty ? [.starter] : models
+        self.routes = routes
         self.customBaseURL = customBaseURL
         self.customName = customName
-        self.customModel = customModel
-        self.hintModel = hintModel
         self.hintsOnOwnQuestions = hintsOnOwnQuestions
         self.glossaries = glossaries
         self.customTerms = customTerms
@@ -291,27 +230,19 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         let defaults = AssistantPreferences()
         replyStyle = try container.decodeIfPresent(ReplyStyle.self, forKey: .replyStyle) ?? defaults.replyStyle
         showTimestamps = try container.decodeIfPresent(Bool.self, forKey: .showTimestamps) ?? defaults.showTimestamps
-        provider = (try? container.decodeIfPresent(AIProvider.self, forKey: .provider)) ?? defaults.provider
-        // Siri+ 0.3 kept one Claude API model ID under "model" for both sign-in methods.
-        let legacyModel = try decoder.container(keyedBy: LegacyKeys.self).decodeIfPresent(String.self, forKey: .model)
-        claudeModel = try container.decodeIfPresent(String.self, forKey: .claudeModel)
-            ?? legacyModel.map(ModelOption.claudeCodeAlias(forLegacy:)) ?? defaults.claudeModel
-        claudeAPIModel = try container.decodeIfPresent(String.self, forKey: .claudeAPIModel) ?? legacyModel ?? defaults.claudeAPIModel
-        claudeAuth = (try? container.decodeIfPresent(AuthMethod.self, forKey: .claudeAuth)) ?? defaults.claudeAuth
-        claudeEffort = try container.decodeIfPresent(String.self, forKey: .claudeEffort) ?? defaults.claudeEffort
-        openAIModel = try container.decodeIfPresent(String.self, forKey: .openAIModel) ?? defaults.openAIModel
-        openAIAuth = (try? container.decodeIfPresent(AuthMethod.self, forKey: .openAIAuth)) ?? defaults.openAIAuth
-        openAIEffort = try container.decodeIfPresent(String.self, forKey: .openAIEffort) ?? defaults.openAIEffort
-        deepSeekModel = try container.decodeIfPresent(String.self, forKey: .deepSeekModel) ?? defaults.deepSeekModel
-        deepSeekEffort = try container.decodeIfPresent(String.self, forKey: .deepSeekEffort) ?? defaults.deepSeekEffort
         customBaseURL = try container.decodeIfPresent(String.self, forKey: .customBaseURL) ?? defaults.customBaseURL
         customName = try container.decodeIfPresent(String.self, forKey: .customName) ?? defaults.customName
-        customModel = try container.decodeIfPresent(String.self, forKey: .customModel) ?? defaults.customModel
-        hintModel = try? container.decodeIfPresent(HintModelChoice.self, forKey: .hintModel)
+        if let models = try? container.decodeIfPresent([ModelProfile].self, forKey: .models), !models.isEmpty {
+            self.models = models
+            routes = (try? container.decodeIfPresent([ModelPurpose: UUID].self, forKey: .routes)) ?? [:]
+        } else {
+            // Siri+ 0.5.2 and earlier kept one model per provider and an optional separate model for hints.
+            (models, routes) = try LegacyModels(from: decoder).profiles()
+        }
+        hintMode = (try? container.decodeIfPresent(HintMode.self, forKey: .hintMode)) ?? defaults.hintMode
         hintsOnOwnQuestions = try container.decodeIfPresent(Bool.self, forKey: .hintsOnOwnQuestions) ?? defaults.hintsOnOwnQuestions
         glossaries = try container.decodeIfPresent(Set<String>.self, forKey: .glossaries) ?? defaults.glossaries
         customTerms = try container.decodeIfPresent(String.self, forKey: .customTerms) ?? defaults.customTerms
-        hintMode = (try? container.decodeIfPresent(HintMode.self, forKey: .hintMode)) ?? defaults.hintMode
         transcriptionLocale = try container.decodeIfPresent(String.self, forKey: .transcriptionLocale) ?? defaults.transcriptionLocale
         capturesMicrophone = try container.decodeIfPresent(Bool.self, forKey: .capturesMicrophone) ?? defaults.capturesMicrophone
         recordsAudio = try container.decodeIfPresent(Bool.self, forKey: .recordsAudio) ?? defaults.recordsAudio
@@ -322,29 +253,40 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         dictatesOnShortcut = try container.decodeIfPresent(Bool.self, forKey: .dictatesOnShortcut) ?? defaults.dictatesOnShortcut
     }
 
-    private enum LegacyKeys: String, CodingKey {
-        case model
+    // MARK: Models and routes
+
+    /// The model that does this; the first one when no route is set or its model was removed.
+    func model(for purpose: ModelPurpose) -> ModelProfile {
+        routes[purpose].flatMap { id in models.first { $0.id == id } } ?? models.first ?? .starter
     }
 
-    var selection: ModelSelection {
-        ModelSelection(
-            provider: provider,
-            claudeModel: claudeAuth == .account ? claudeModel : claudeAPIModel,
-            claudeAuth: claudeAuth,
-            openAIModel: openAIModel,
-            openAIAuth: openAIAuth,
-            claudeEffort: claudeEffort,
-            openAIEffort: openAIEffort,
-            deepSeekModel: deepSeekModel,
-            deepSeekEffort: deepSeekEffort,
-            customBaseURL: customBaseURL,
-            customModel: customModel
-        )
+    func selection(for purpose: ModelPurpose) -> ModelSelection {
+        var selection = model(for: purpose).selection(serverAddress: customBaseURL)
+        // Hints take the model's own effort; "Automatic" keeps them brief.
+        selection.appliesEffortToHints = purpose == .hints
+        return selection
     }
 
-    /// What answers live meeting hints: the model chosen for them, or the one above.
-    var hintSelection: ModelSelection {
-        hintModel.map(selection.replacing(with:)) ?? selection
+    /// What answers in the chat and the ask panel.
+    var selection: ModelSelection { selection(for: .chat) }
+    /// What answers live meeting hints.
+    var hintSelection: ModelSelection { selection(for: .hints) }
+
+    /// The purposes a model is chosen for.
+    func purposes(of profile: ModelProfile) -> [ModelPurpose] {
+        ModelPurpose.allCases.filter { model(for: $0).id == profile.id }
+    }
+
+    /// Adds a model or replaces the one with its id.
+    mutating func save(_ profile: ModelProfile) {
+        if let index = models.firstIndex(where: { $0.id == profile.id }) { models[index] = profile } else { models.append(profile) }
+    }
+
+    /// Removes a model unless it is the last one; its purposes fall back to the first model.
+    mutating func remove(_ id: UUID) {
+        guard models.count > 1 else { return }
+        models.removeAll { $0.id == id }
+        routes = routes.filter { $0.value != id }
     }
 
     /// The provider's name for status lines: "Claude", or the name given to an OpenAI-compatible server.

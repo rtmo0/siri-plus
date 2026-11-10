@@ -243,7 +243,24 @@ final class AppModel: ObservableObject {
     /// Whether the model chosen for meeting hints can answer.
     var isHintModelReady: Bool { accounts.isReady(preferences.hintSelection) }
     /// "Claude", or the name of the connected OpenAI-compatible server.
-    var providerName: String { preferences.providerName(preferences.provider) }
+    var providerName: String { preferences.providerName(preferences.model(for: .chat).provider) }
+
+    /// Whether this model's sign-in, key or server is ready.
+    func isReady(_ profile: ModelProfile) -> Bool {
+        accounts.isReady(profile.selection(serverAddress: preferences.customBaseURL))
+    }
+
+    /// Whether a sign-in, key or server is connected, whatever models use it.
+    func isConnected(_ connection: ModelConnection) -> Bool {
+        switch connection {
+        case .claudeAccount: accounts.claudeCode.signedIn
+        case .chatGPTAccount: accounts.chatGPTEmail != nil
+        case .claudeKey: accounts.hasKey(.claude)
+        case .openAIKey: accounts.hasKey(.openAI)
+        case .deepSeekKey: accounts.hasKey(.deepSeek)
+        case .server: accounts.hasKey(.custom)
+        }
+    }
 
     @discardableResult
     func send(_ text: String) -> Task<Void, Never>? {
@@ -555,7 +572,6 @@ final class AppModel: ObservableObject {
             case .custom:
                 accounts.customModels = []
                 preferences.customBaseURL = ""
-                preferences.customModel = ""
             }
         } catch {
             errorMessage = String(localized: "The key was not deleted. \(error.localizedDescription)")
@@ -587,7 +603,6 @@ final class AppModel: ObservableObject {
         }
         preferences.customBaseURL = base.absoluteString
         preferences.customName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !accounts.customModels.contains(where: { $0.id == preferences.customModel }) { preferences.customModel = "" }
         accounts.keys[.custom] = status
     }
 

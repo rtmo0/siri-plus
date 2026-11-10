@@ -121,17 +121,14 @@ struct DeepSeekTests {
     }
 
     @Test func preferencesKeepTheDeepSeekChoice() throws {
-        var preferences = AssistantPreferences()
-        preferences.provider = .deepSeek
-        preferences.deepSeekModel = "deepseek-v4-pro"
-        preferences.deepSeekEffort = "max"
+        let preferences = AssistantPreferences(models: [ModelProfile(provider: .deepSeek, auth: .apiKey, model: "deepseek-v4-pro", effort: "max")])
         let decoded = try JSONDecoder().decode(AssistantPreferences.self, from: JSONEncoder().encode(preferences))
         #expect(decoded.selection.route == .deepSeek)
         #expect(decoded.selection.model == "deepseek-v4-pro")
         #expect(decoded.selection.effort == "max")
-        // Settings saved before DeepSeek existed get its defaults.
-        let old = try JSONDecoder().decode(AssistantPreferences.self, from: Data(#"{"provider":"openAI"}"#.utf8))
-        #expect(old.deepSeekModel == ModelOption.deepSeekDefault.id)
+        // A DeepSeek model without a model ID uses DeepSeek's default.
+        let plain = AssistantPreferences(models: [ModelProfile(provider: .deepSeek, auth: .apiKey)])
+        #expect(plain.selection.model == ModelOption.deepSeekDefault.id)
     }
 }
 

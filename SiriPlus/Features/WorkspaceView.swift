@@ -22,7 +22,7 @@ struct WorkspaceView: View {
                         MeetingView(
                             meeting: model.meeting,
                             permissions: model.permissions,
-                            isModelReady: model.isModelReady,
+                            isModelReady: model.isHintModelReady,
                             showPanel: { model.showHintPanel?() },
                             openSettings: { model.selectedTab = .settings }
                         )
@@ -59,7 +59,7 @@ struct WorkspaceView: View {
                     Label("\(model.providerName) · \(compact)", systemImage: "gauge.with.dots.needle.50percent")
                         .foregroundStyle(usage.limits.contains { $0.remainingPercent < 10 } ? .red : .green)
                         .help(usage.limits.map(\.summary).joined(separator: "\n"))
-                } else if model.preferences.provider == .deepSeek, let balance = model.apiUsage.balance {
+                } else if model.preferences.model(for: .chat).provider == .deepSeek, let balance = model.apiUsage.balance {
                     Label("DeepSeek · \(balance.formatted)", systemImage: "creditcard")
                         .foregroundStyle(balance.isAvailable ? .green : .red)
                         .help("DeepSeek balance")

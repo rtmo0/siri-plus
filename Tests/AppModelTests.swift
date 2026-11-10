@@ -133,7 +133,7 @@ struct AppModelTests {
         credentials.claudeKey = claude
         credentials.openAIKey = openAI
         let model = makeModel(credentials: credentials)
-        model.preferences.claudeAuth = .apiKey
+        model.preferences.use(ModelProfile(provider: .claude, auth: .apiKey, model: "claude-opus-5-5"))
         #expect(!model.isModelReady)
 
         await model.saveAPIKey("  sk-ant-test \n", for: .claude)
@@ -142,8 +142,7 @@ struct AppModelTests {
         #expect(try claude.read() == "sk-ant-test")
         #expect(model.isModelReady)
 
-        model.preferences.provider = .openAI
-        model.preferences.openAIAuth = .apiKey
+        model.preferences.use(ModelProfile(provider: .openAI, auth: .apiKey))
         #expect(!model.isModelReady)
         await model.saveAPIKey("sk-openai", for: .openAI)
         #expect(model.isModelReady)
@@ -161,7 +160,7 @@ struct AppModelTests {
             return DeepSeekBalance(isAvailable: true, amounts: [.init(currency: "USD", total: 4.2, granted: 0, toppedUp: 4.2)])
         }
         let model = makeModel(credentials: credentials)
-        model.preferences.provider = .deepSeek
+        model.preferences.use(ModelProfile(provider: .deepSeek, auth: .apiKey))
         #expect(!model.isModelReady)
 
         await model.saveAPIKey("sk-bad", for: .deepSeek)
@@ -185,8 +184,7 @@ struct AppModelTests {
         var credentials = Credentials.inMemory()
         credentials.openAIKeyCheck = { _ in throw URLError(.notConnectedToInternet) }
         let model = makeModel(credentials: credentials)
-        model.preferences.provider = .openAI
-        model.preferences.openAIAuth = .apiKey
+        model.preferences.use(ModelProfile(provider: .openAI, auth: .apiKey))
         await model.saveAPIKey("sk-openai", for: .openAI)
         guard case .unverified? = model.accounts.keys[.openAI] else {
             Issue.record("Expected an unverified key, got \(String(describing: model.accounts.keys[.openAI]))")
@@ -200,7 +198,7 @@ struct AppModelTests {
         credentials.claudeKey = MemorySecretStore("sk-ant-revoked")
         credentials.claudeAPIModels = { _ in throw ClaudeError.http(status: 401, message: "invalid x-api-key") }
         let model = makeModel(credentials: credentials)
-        model.preferences.claudeAuth = .apiKey
+        model.preferences.use(ModelProfile(provider: .claude, auth: .apiKey, model: "claude-opus-5-5"))
         #expect(model.accounts.keys[.claude] == .unchecked)
         #expect(model.isModelReady)
         await model.refreshAccounts()
@@ -233,7 +231,7 @@ struct AppModelTests {
             return [ModelOption(id: "qwen3", title: "qwen3", efforts: [])]
         }
         let model = makeModel(credentials: credentials)
-        model.preferences.provider = .custom
+        model.preferences.use(ModelProfile(provider: .custom, auth: .apiKey))
         #expect(!model.isModelReady)
 
         await model.connectCustomServer(address: "localhost:11434", name: "", key: "bad")
@@ -254,23 +252,36 @@ struct AppModelTests {
         #expect(model.preferences.customBaseURL.isEmpty)
     }
 
-    @Test func hintsCanUseTheirOwnModel() async throws {
+    @Test func eachPurposeUsesItsRoutedModel() async throws {
         var credentials = Credentials.inMemory()
         credentials.deepSeekKey = MemorySecretStore("sk-deepseek")
         let model = makeModel(credentials: credentials)
-        model.preferences.claudeAuth = .apiKey
-        #expect(model.preferences.hintSelection == model.preferences.selection)
+        let chat = ModelProfile(provider: .claude, auth: .apiKey, model: "claude-opus-5-5", effort: "high")
+        let fast = ModelProfile(provider: .deepSeek, auth: .apiKey, model: "deepseek-flash", effort: "none")
+        model.preferences.models = [chat, fast]
+        #expect(model.preferences.hintSelection.route == .claudeAPI)
 
-        model.preferences.hintModel = HintModelChoice(provider: .deepSeek, model: "deepseek-flash", effort: "none")
+        model.preferences.routes[.hints] = fast.id
         let hint = model.preferences.hintSelection
         #expect(hint.route == .deepSeek)
         #expect(hint.model == "deepseek-flash")
         #expect(hint.effort == "none")
         #expect(hint.appliesEffortToHints)
-        // The chat keeps the model above.
+        // The chat and summaries keep the first model, which has no key yet.
         #expect(model.preferences.selection.route == .claudeAPI)
+        #expect(!model.preferences.selection.appliesEffortToHints)
+        #expect(model.preferences.selection(for: .summaries).claudeModel == "claude-opus-5-5")
         #expect(model.isHintModelReady)
         #expect(!model.isModelReady)
+        #expect(model.preferences.purposes(of: chat) == [.chat, .summaries])
+        #expect(model.preferences.purposes(of: fast) == [.hints])
+
+        // A removed model's purposes fall back to the first one; the last model cannot be removed.
+        model.preferences.remove(fast.id)
+        #expect(model.preferences.models == [chat])
+        #expect(model.preferences.routes.isEmpty)
+        model.preferences.remove(chat.id)
+        #expect(model.preferences.models == [chat])
     }
 
     @Test func accountsReflectClaudeCodeSignIn() async {
@@ -304,10 +315,11 @@ struct AppModelTests {
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let store = PreferencesStore(defaults: defaults)
+        let hints = ModelProfile(provider: .claude, auth: .apiKey, model: "claude-haiku-5-5", effort: "low", name: "Fast")
         let preferences = AssistantPreferences(
-            replyStyle: .detailed, showTimestamps: false, provider: .openAI, claudeModel: "claude-opus-4-6",
-            claudeAPIModel: "claude-haiku-5-5", claudeAuth: .apiKey, claudeEffort: "xhigh", openAIModel: "gpt-6-luna",
-            openAIEffort: "high", hintMode: .manual, transcriptionLocale: "en-US"
+            replyStyle: .detailed, showTimestamps: false,
+            models: [ModelProfile(provider: .openAI, auth: .apiKey, model: "gpt-6-luna", effort: "high"), hints],
+            routes: [.hints: hints.id], hintMode: .manual, transcriptionLocale: "en-US"
         )
         store.save(preferences)
         #expect(PreferencesStore(defaults: defaults).load() == preferences)
@@ -316,18 +328,38 @@ struct AppModelTests {
         #expect(store.load() == AssistantPreferences())
     }
 
+    private func load(_ json: String) throws -> AssistantPreferences {
+        try JSONDecoder().decode(AssistantPreferences.self, from: Data(json.utf8))
+    }
+
     @Test func claudeModelFromVersion03MapsToBothSignInMethods() throws {
-        let suite = "dev.siriplus.tests.\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        defaults.set(Data(#"{"model":"claude-sonnet-5-5","claudeAuth":"apiKey"}"#.utf8), forKey: "assistant.preferences.v1")
-        let loaded = PreferencesStore(defaults: defaults).load()
-        #expect(loaded.claudeModel == "sonnet")
-        #expect(loaded.claudeAPIModel == "claude-sonnet-5-5")
-        #expect(loaded.selection.claudeModel == "claude-sonnet-5-5")
-        var account = loaded
-        account.claudeAuth = .account
+        let key = try load(#"{"model":"claude-sonnet-5-5","claudeAuth":"apiKey"}"#)
+        #expect(key.models.count == 1)
+        #expect(key.selection.route == .claudeAPI)
+        #expect(key.selection.claudeModel == "claude-sonnet-5-5")
+        let account = try load(#"{"model":"claude-sonnet-5-5"}"#)
+        #expect(account.selection.route == .claudeCode)
         #expect(account.selection.claudeModel == "sonnet")
+    }
+
+    @Test func modelsFromVersion052BecomeTheList() throws {
+        // The provider in use becomes the first model.
+        let plain = try load(#"{"provider":"deepSeek","deepSeekModel":"deepseek-v4-pro","claudeAuth":"apiKey"}"#)
+        #expect(plain.models.map(\.provider) == [.deepSeek])
+        #expect(plain.selection.model == "deepseek-v4-pro")
+        #expect(plain.routes.isEmpty)
+        // A separate hint model is added and routed to hints.
+        let separate = try load(#"{"provider":"claude","claudeModel":"opus","hintModel":{"provider":"deepSeek","model":"deepseek-flash","effort":"none"}}"#)
+        #expect(separate.models.count == 2)
+        #expect(separate.selection.route == .claudeCode)
+        #expect(separate.hintSelection.route == .deepSeek)
+        #expect(separate.hintSelection.effort == "none")
+        // Hints always thought briefly: a model with a chosen effort gets a brief copy for them.
+        let deep = try load(#"{"provider":"claude","claudeModel":"opus","claudeEffort":"max"}"#)
+        #expect(deep.models.count == 2)
+        #expect(deep.selection.effort == "max")
+        #expect(deep.hintSelection.effort == ModelEffort.automatic)
+        #expect(deep.hintSelection.claudeModel == "opus")
     }
 
     @Test func preferencesFromOlderVersionKeepTheirValues() throws {
@@ -338,10 +370,9 @@ struct AppModelTests {
         let loaded = PreferencesStore(defaults: defaults).load()
         #expect(loaded.replyStyle == .detailed)
         #expect(!loaded.showTimestamps)
-        #expect(loaded.claudeModel == "opus")
-        #expect(loaded.claudeAPIModel == "claude-opus-5-5")
-        #expect(loaded.claudeEffort == ModelEffort.automatic)
-        #expect(loaded.claudeAuth == .account)
+        #expect(loaded.models == [.starter])
+        #expect(loaded.selection.route == .claudeCode)
+        #expect(loaded.selection.claudeModel == "opus")
         #expect(loaded.hintMode == .questionsAndTopic)
         #expect(loaded.transcriptionLocale == AssistantPreferences.systemLocale)
     }
@@ -477,5 +508,13 @@ func eventually(timeout: Duration = .seconds(2), _ condition: () -> Bool) async 
             return
         }
         try await Task.sleep(for: .milliseconds(5))
+    }
+}
+
+extension AssistantPreferences {
+    /// Makes this the only model, used for everything.
+    mutating func use(_ profile: ModelProfile) {
+        models = [profile]
+        routes = [:]
     }
 }

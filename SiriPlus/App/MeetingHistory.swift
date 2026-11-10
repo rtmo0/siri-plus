@@ -92,7 +92,7 @@ final class MeetingHistory: ObservableObject {
         guard let record = records.first(where: { $0.id == id }), !summarizing.contains(id) else { return }
         summarizing.insert(id)
         summaryFailures[id] = nil
-        let request = SummaryRequest(transcript: record.promptTranscript, notes: record.notes, selection: preferences().selection, vocabulary: vocabulary())
+        let request = SummaryRequest(transcript: record.promptTranscript, notes: record.notes, selection: preferences().selection(for: .summaries), vocabulary: vocabulary())
         Task { [weak self, summaries] in
             var reply = ""
             do {

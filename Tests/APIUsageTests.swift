@@ -73,12 +73,15 @@ struct APIUsageTests {
             }
             return text
         }
-        let main = ModelSelection(provider: .deepSeek, deepSeekEffort: "max")
-        // The model above thinks deeply in chats, but hints stay light.
-        #expect(try await hint(main) == "low")
-        // A model chosen for hints sends its own level, "no thinking" included; "Automatic" stays light.
-        #expect(try await hint(main.replacing(with: HintModelChoice(provider: .deepSeek, effort: "none"))) == "none")
-        #expect(try await hint(main.replacing(with: HintModelChoice(provider: .deepSeek))) == "low")
+        // A selection that is not routed for hints keeps them light whatever effort it has.
+        #expect(try await hint(ModelSelection(provider: .deepSeek, deepSeekEffort: "max")) == "low")
+        // The model routed to hints sends its own level, "no thinking" included; "Automatic" stays light.
+        func routed(_ effort: String) -> ModelSelection {
+            let profile = ModelProfile(provider: .deepSeek, auth: .apiKey, effort: effort)
+            return AssistantPreferences(models: [profile]).selection(for: .hints)
+        }
+        #expect(try await hint(routed("none")) == "none")
+        #expect(try await hint(routed(ModelEffort.automatic)) == "low")
     }
 }
 

@@ -91,12 +91,12 @@
         }
       }
     },
-    "%@ is not connected: choose it under Model above to sign in or add a key, then switch back.": {
+    "%@ is not connected yet: sign in or add its key under Accounts and Keys.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ не подключён: выберите его выше в разделе «Модель», войдите или добавьте ключ, затем вернитесь обратно."
+            "value": "%@ ещё не подключена: войдите или добавьте ключ в разделе «Аккаунты и ключи»."
           }
         }
       }
@@ -337,12 +337,52 @@
         }
       }
     },
+    "Accounts and Keys": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Аккаунты и ключи"
+          }
+        }
+      }
+    },
+    "Add": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавить"
+          }
+        }
+      }
+    },
     "Add File…": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Добавить файл…"
+          }
+        }
+      }
+    },
+    "Add Model": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Новая модель"
+          }
+        }
+      }
+    },
+    "Add Model…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавить модель…"
           }
         }
       }
@@ -373,6 +413,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Добавьте ключ API в Настройках."
+          }
+        }
+      }
+    },
+    "Add each model you want to use: a subscription model, one with an API key, a local one. Then choose below what each one does.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавьте модели, которыми пользуетесь: по подписке, по API-ключу, локальную. Ниже выберите, что делает каждая."
           }
         }
       }
@@ -587,22 +637,12 @@
         }
       }
     },
-    "Automatic (brief)": {
+    "Automatic effort: brief answers think briefly, detailed ones longer, meeting hints briefly.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Автоматически (кратко)"
-          }
-        }
-      }
-    },
-    "Automatic effort: brief answers think briefly, detailed ones longer.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Автоматическая глубина: над краткими ответами модель думает недолго, над подробными — дольше."
+            "value": "Автоматическая глубина: над краткими ответами модель думает недолго, над подробными — дольше, над подсказками на встрече — коротко."
           }
         }
       }
@@ -627,7 +667,7 @@
         }
       }
     },
-    "Balance and Usage": {
+    "Balance and usage": {
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -667,6 +707,16 @@
         }
       }
     },
+    "Cancel": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Отменить"
+          }
+        }
+      }
+    },
     "Capture the main display without the Siri+ window. macOS will ask for permission.": {
       "localizations": {
         "ru": {
@@ -683,6 +733,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Чат"
+          }
+        }
+      }
+    },
+    "Chat and ask panel": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Чат и панель вопросов"
           }
         }
       }
@@ -987,6 +1047,16 @@
         }
       }
     },
+    "Claude subscription: %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подписка Claude: %@"
+          }
+        }
+      }
+    },
     "Clear": {
       "localizations": {
         "ru": {
@@ -1207,6 +1277,16 @@
         }
       }
     },
+    "Delete Model": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Удалить модель"
+          }
+        }
+      }
+    },
     "Delete the meeting?": {
       "localizations": {
         "ru": {
@@ -1297,12 +1377,62 @@
         }
       }
     },
+    "Edit": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Изменить"
+          }
+        }
+      }
+    },
+    "Edit Model": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настройка модели"
+          }
+        }
+      }
+    },
+    "Edit this model": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Изменить эту модель"
+          }
+        }
+      }
+    },
+    "Edit…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Изменить…"
+          }
+        }
+      }
+    },
     "Effort": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Глубина размышлений"
+          }
+        }
+      }
+    },
+    "Effort: %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Глубина: %@"
           }
         }
       }
@@ -1457,6 +1587,16 @@
         }
       }
     },
+    "General": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Общие"
+          }
+        }
+      }
+    },
     "Get an API key": {
       "localizations": {
         "ru": {
@@ -1577,12 +1717,12 @@
         }
       }
     },
-    "Hints have to arrive within seconds: a fast model with little or no thinking works best, such as Claude Haiku or DeepSeek Flash without thinking. Chats and meeting summaries keep the model above.": {
+    "Hints have to arrive within seconds: a fast model with little or no thinking works best, such as Claude Haiku or DeepSeek Flash without thinking. A model’s “Automatic” effort keeps hints brief and thinks longer on detailed answers.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Подсказки должны приходить за секунды: лучше всего быстрая модель с короткими размышлениями или без них, например Claude Haiku или DeepSeek Flash без размышлений. Чат и итоги встреч остаются на модели выше."
+            "value": "Подсказки должны приходить за секунды: лучше всего быстрая модель с короткими размышлениями или без них, например Claude Haiku или DeepSeek Flash без размышлений. «Автоматическая» глубина держит подсказки короткими, а над подробными ответами модель думает дольше."
           }
         }
       }
@@ -1603,6 +1743,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Сколько модель думает перед ответом. Чем глубже, тем медленнее и тем больше расход лимитов."
+          }
+        }
+      }
+    },
+    "How the model is called in Settings; empty uses the model's own name": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Как модель называется в настройках; если пусто — по названию модели"
           }
         }
       }
@@ -1887,6 +2037,16 @@
         }
       }
     },
+    "Meeting hints": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подсказки на встрече"
+          }
+        }
+      }
+    },
     "Meeting hints and an assistant in the menu bar. Speech is recognized on this Mac.": {
       "localizations": {
         "ru": {
@@ -1923,6 +2083,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Созвон %@"
+          }
+        }
+      }
+    },
+    "Meeting summaries": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Итоги встреч"
           }
         }
       }
@@ -1977,12 +2147,22 @@
         }
       }
     },
-    "Model for Meeting Hints": {
+    "Models": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Модель для подсказок на созвоне"
+            "value": "Модели"
+          }
+        }
+      }
+    },
+    "Models of one provider share its sign-in or key. Only your messages, a screenshot you take, and the latest part of the meeting transcript (when a hint is needed) go to the provider; with a local server nothing leaves the Mac.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модели одного провайдера используют общий вход или ключ. Провайдеру уходят только ваши сообщения, снятый вами скриншот и последний фрагмент расшифровки встречи (когда нужна подсказка); с локальным сервером ничего не покидает Mac."
           }
         }
       }
@@ -2327,16 +2507,6 @@
         }
       }
     },
-    "Only your messages, a screenshot you take, and the latest part of the meeting transcript (when a hint is needed) go to the cloud.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "В облако уходят только ваши сообщения, снимок экрана по кнопке и последний фрагмент расшифровки созвона, когда нужна подсказка."
-          }
-        }
-      }
-    },
     "Open Assistant": {
       "localizations": {
         "ru": {
@@ -2607,26 +2777,6 @@
         }
       }
     },
-    "Requests and tokens are counted on this Mac from Claude’s replies; the cost is an estimate at Anthropic’s list prices.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Запросы и токены Siri+ считает на этом Mac по ответам Claude. Стоимость — оценка по прайсу Anthropic."
-          }
-        }
-      }
-    },
-    "Requests and tokens are counted on this Mac from the replies.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Запросы и токены Siri+ считает на этом Mac по ответам сервера."
-          }
-        }
-      }
-    },
     "Requests use your ChatGPT subscription limits.": {
       "localizations": {
         "ru": {
@@ -2677,12 +2827,12 @@
         }
       }
     },
-    "Same as above": {
+    "Save": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Как выше"
+            "value": "Сохранить"
           }
         }
       }
@@ -2887,16 +3037,6 @@
         }
       }
     },
-    "Separate model for hints": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Отдельная модель для подсказок"
-          }
-        }
-      }
-    },
     "Server": {
       "localizations": {
         "ru": {
@@ -3043,16 +3183,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Войдите в аккаунт Claude в Настройках."
-          }
-        }
-      }
-    },
-    "Sign in with browser": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Вход через браузер"
           }
         }
       }
@@ -3257,12 +3387,12 @@
         }
       }
     },
-    "Speech is recognized on this Mac. ⌃⌥Space in any app asks for a hint.": {
+    "Speech is recognized on this Mac. ⌃⌥Space in any app asks for a hint. Which model gives hints and writes summaries is chosen under Models.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Речь распознаётся на этом Mac. ⌃⌥Пробел в любом приложении — подсказать сейчас."
+            "value": "Речь распознаётся на этом Mac. ⌃⌥Space в любом приложении запрашивает подсказку. Какая модель подсказывает и пишет итоги, выбирается в разделе «Модели»."
           }
         }
       }
@@ -3367,12 +3497,32 @@
         }
       }
     },
+    "Subscription": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подписка"
+          }
+        }
+      }
+    },
     "Suggest answers to questions you ask aloud as well, not only the other side's: for practice, or a meeting you lead.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Подсказывать ответы и на вопросы, которые задаёте вы, а не только собеседники: для тренировки или если встречу ведёте вы."
+          }
+        }
+      }
+    },
+    "Summaries": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Итоги"
           }
         }
       }
@@ -3483,16 +3633,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Баланс DeepSeek закончился. Пополните его на platform.deepseek.com."
-          }
-        }
-      }
-    },
-    "The balance comes from DeepSeek. Requests and tokens are counted on this Mac from DeepSeek’s replies; the cost is an estimate at list prices, with off-peak hours at half price.": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Баланс приходит от DeepSeek. Запросы и токены Siri+ считает на этом Mac по ответам DeepSeek. Стоимость — оценка по прайсу, в непиковые часы вдвое дешевле."
           }
         }
       }
@@ -3857,6 +3997,16 @@
         }
       }
     },
+    "This model thinks long (%@): hints may come late. Automatic keeps them brief.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Эта модель долго думает (%@): подсказки могут опаздывать. «Автоматически» держит их короткими."
+          }
+        }
+      }
+    },
     "To get answers, sign in to Claude or ChatGPT in Settings.": {
       "localizations": {
         "ru": {
@@ -4017,7 +4167,7 @@
         }
       }
     },
-    "Usage Limits": {
+    "Usage limits": {
       "localizations": {
         "ru": {
           "stringUnit": {
@@ -4043,6 +4193,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Расход на сайте OpenAI"
+          }
+        }
+      }
+    },
+    "Use For": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Использовать для"
           }
         }
       }
@@ -4163,6 +4323,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Чаты сохраняются на этом Mac."
+          }
+        }
+      }
+    },
+    "default": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "по умолчанию"
           }
         }
       }

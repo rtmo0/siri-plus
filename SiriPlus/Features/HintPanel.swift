@@ -544,16 +544,22 @@ private struct PanelBackground: View {
     }
 }
 
+/// The Siri-like orb: it breathes slowly while the panel waits and pulses faster while Siri+ listens or answers.
+/// Only its rendering changes (scale, glow, colour), never its layout size, so it cannot resize the panel.
 private struct SiriOrb: View {
     let isActive: Bool
 
     var body: some View {
-        TimelineView(.animation(paused: !isActive)) { context in
+        // Idle breathing needs few frames; the active pulse gets the display's rate.
+        TimelineView(.animation(minimumInterval: isActive ? nil : 1.0 / 30)) { context in
             let time = context.date.timeIntervalSinceReferenceDate
+            let pulse = isActive ? sin(time * 6) : sin(time * 2.4)
+            let amount = isActive ? 0.1 : 0.05
             Circle()
-                .fill(AngularGradient(colors: SiriColors.all, center: .center, angle: .degrees(time * 120)))
+                .fill(AngularGradient(colors: SiriColors.all, center: .center, angle: .degrees(time * (isActive ? 120 : 30))))
                 .overlay(Circle().fill(.white.opacity(0.25)).blur(radius: 4).padding(6))
-                .scaleEffect(isActive ? 1 + 0.08 * sin(time * 6) : 1)
+                .scaleEffect(1 + amount * pulse)
+                .shadow(color: SiriColors.all[1].opacity(isActive ? 0.55 + 0.25 * pulse : 0.3 + 0.15 * pulse), radius: isActive ? 7 : 4)
         }
     }
 }

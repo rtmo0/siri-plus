@@ -613,15 +613,52 @@ final class MeetingAudioCapture: NSObject, SCStreamOutput, SCStreamDelegate, @un
 }
 
 extension CMSampleBuffer {
+    /// The samples as a PCM buffer; nil for audio that is not linear PCM or cannot be copied.
+    /// More than two channels (a browser's voice-processed microphone may deliver them) become the first one.
     func pcmBuffer() -> AVAudioPCMBuffer? {
-        guard let description = formatDescription else { return nil }
-        let format = AVAudioFormat(cmAudioFormatDescription: description)
+        guard let description = formatDescription, let format = Self.pcmFormat(of: description) else { return nil }
         let frames = AVAudioFrameCount(numSamples)
         guard frames > 0, let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames) else { return nil }
         buffer.frameLength = frames
         let status = CMSampleBufferCopyPCMDataIntoAudioBufferList(
             self, at: 0, frameCount: Int32(frames), into: buffer.mutableAudioBufferList
         )
-        return status == noErr ? buffer : nil
+        guard status == noErr else { return nil }
+        return format.channelCount > 2 ? (buffer.firstChannel() ?? buffer) : buffer
+    }
+
+    /// `AVAudioFormat(cmAudioFormatDescription:)` is not optional in Swift, yet it yields nil for some formats,
+    /// such as more than two channels without a channel layout, and creating a buffer with it crashed.
+    static func pcmFormat(of description: CMFormatDescription) -> AVAudioFormat? {
+        guard var stream = description.audioStreamBasicDescription, stream.mFormatID == kAudioFormatLinearPCM,
+              stream.mChannelsPerFrame > 0, stream.mSampleRate > 0, stream.mBitsPerChannel > 0 else { return nil }
+        let channels = stream.mChannelsPerFrame
+        var layoutSize = 0
+        if let pointer = CMAudioFormatDescriptionGetChannelLayout(description, sizeOut: &layoutSize), layoutSize > 0 {
+            let layout = AVAudioChannelLayout(layout: pointer)
+            if layout.channelCount == channels, let format = AVAudioFormat(streamDescription: &stream, channelLayout: layout) {
+                return format
+            }
+        }
+        if channels <= 2 { return AVAudioFormat(streamDescription: &stream) }
+        guard let layout = AVAudioChannelLayout(layoutTag: kAudioChannelLayoutTag_DiscreteInOrder | channels) else { return nil }
+        return AVAudioFormat(streamDescription: &stream, channelLayout: layout)
+    }
+}
+
+extension AVAudioPCMBuffer {
+    /// The first channel alone, in the same sample format and rate; nil when it cannot be extracted.
+    func firstChannel() -> AVAudioPCMBuffer? {
+        guard format.channelCount > 1,
+              let mono = AVAudioFormat(commonFormat: format.commonFormat, sampleRate: format.sampleRate, channels: 1, interleaved: false),
+              let converter = AVAudioConverter(from: format, to: mono),
+              let output = AVAudioPCMBuffer(pcmFormat: mono, frameCapacity: frameLength) else { return nil }
+        converter.channelMap = [0]
+        do {
+            try converter.convert(to: output, from: self)
+        } catch {
+            return nil
+        }
+        return output.frameLength > 0 ? output : nil
     }
 }

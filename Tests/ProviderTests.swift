@@ -60,8 +60,8 @@ struct PromptTests {
 
     @Test func requestsRouteToTheChosenBackend() async throws {
         let backends = (RecordingBackend(name: "claudeAPI"), RecordingBackend(name: "claudeCode"),
-                        RecordingBackend(name: "openAIAPI"), RecordingBackend(name: "chatGPT"))
-        let service = CloudAssistantService(claudeAPI: backends.0, claudeCode: backends.1, openAIAPI: backends.2, chatGPT: backends.3)
+                        RecordingBackend(name: "openAIAPI"), RecordingBackend(name: "chatGPT"), RecordingBackend(name: "deepSeek"))
+        let service = CloudAssistantService(claudeAPI: backends.0, claudeCode: backends.1, openAIAPI: backends.2, chatGPT: backends.3, deepSeek: backends.4)
         func run(_ selection: ModelSelection) async throws -> String {
             var text = ""
             for try await part in service.hint(for: HintRequest(trigger: .manual, transcript: "", notes: "", previousHints: [], selection: selection)) {
@@ -73,6 +73,7 @@ struct PromptTests {
         #expect(try await run(ModelSelection(provider: .claude, claudeModel: "claude-sonnet-5-5", claudeAuth: .apiKey)) == "claudeAPI:claude-sonnet-5-5")
         #expect(try await run(ModelSelection(provider: .openAI, openAIModel: "gpt-6-luna", openAIAuth: .apiKey)) == "openAIAPI:gpt-6-luna")
         #expect(try await run(ModelSelection(provider: .openAI, openAIModel: "gpt-x", openAIAuth: .account)) == "chatGPT:gpt-x")
+        #expect(try await run(ModelSelection(provider: .deepSeek, deepSeekModel: "deepseek-v4-pro")) == "deepSeek:deepseek-v4-pro")
     }
 
     @Test func effortFollowsSettingsAndWhatTheModelAccepts() async throws {
@@ -83,7 +84,7 @@ struct PromptTests {
             ModelOption(id: "claude-opus-4-6", title: "Opus 4.6", efforts: ["low", "medium", "high", "max"]),
             ModelOption(id: "claude-haiku-4-5", title: "Haiku 4.5", efforts: []),
         ], for: .claudeCode)
-        let service = CloudAssistantService(claudeAPI: backend, claudeCode: backend, openAIAPI: backend, chatGPT: backend, catalog: catalog)
+        let service = CloudAssistantService(claudeAPI: backend, claudeCode: backend, openAIAPI: backend, chatGPT: backend, deepSeek: backend, catalog: catalog)
         func collect(_ stream: AsyncThrowingStream<String, Error>) async throws -> String {
             var text = ""
             for try await part in stream { text += part }

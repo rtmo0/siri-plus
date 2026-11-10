@@ -10,6 +10,7 @@ struct PreferencesView: View {
     var body: some View {
         Form {
             modelSection
+            usageSection
             meetingSection
             conversationSection
             accessSection
@@ -25,7 +26,7 @@ struct PreferencesView: View {
                 Task { await model.refreshAccounts() }
             }
         }
-        .onChange(of: model.preferences.provider) { apiKey = "" }
+        .onChange(of: model.preferences.selection.route) { apiKey = "" }
     }
 
     // MARK: Sections
@@ -39,13 +40,62 @@ struct PreferencesView: View {
             }
             .pickerStyle(.segmented)
             switch model.preferences.provider {
-            case .claude: claudeSettings
-            case .openAI: chatGPTSettings
+            case .claude:
+                authPicker($model.preferences.claudeAuth)
+                if model.preferences.claudeAuth == .account { claudeAccountRow } else {
+                    keyField(for: .claude, prompt: "sk-ant-…", link: URL(string: "https://platform.claude.com/settings/keys")!)
+                }
+            case .openAI:
+                authPicker($model.preferences.openAIAuth)
+                if model.preferences.openAIAuth == .account { chatGPTAccountRow } else {
+                    keyField(for: .openAI, prompt: "sk-…", link: URL(string: "https://platform.openai.com/api-keys")!)
+                }
+            case .deepSeek:
+                keyField(for: .deepSeek, prompt: "sk-…", link: URL(string: "https://platform.deepseek.com/api_keys")!)
             }
+            let choice = modelChoice
+            modelPicker(choice.model, options: choice.options, defaultTitle: choice.defaultTitle)
+            effortPicker(choice.effort, levels: choice.efforts)
         } header: {
             Label("Model", systemImage: "sparkles")
         } footer: {
-            footnote("Only your messages, a screenshot you take, and the latest part of the meeting transcript (when a hint is needed) go to the cloud.")
+            VStack(alignment: .leading, spacing: 4) {
+                footnote("Automatic effort: brief answers think briefly, detailed ones longer. Meeting hints always think briefly so they arrive in seconds.")
+                footnote("Only your messages, a screenshot you take, and the latest part of the meeting transcript (when a hint is needed) go to the cloud.")
+            }
+        }
+    }
+
+    /// Subscription limits of a signed-in account, or the balance and token counts of a DeepSeek key.
+    @ViewBuilder
+    private var usageSection: some View {
+        switch model.preferences.selection.route {
+        case .claudeCode where model.accounts.claudeCode.signedIn:
+            Section {
+                UsageView(usage: model.usage.claude, error: model.usage.claudeError, isRefreshing: model.usage.isRefreshing) {
+                    Task { await model.refreshUsage() }
+                }
+            } header: {
+                Label("Usage Limits", systemImage: "gauge.with.dots.needle.50percent")
+            }
+        case .chatGPT where model.accounts.chatGPTEmail != nil:
+            Section {
+                UsageView(usage: model.usage.chatGPT, error: model.usage.chatGPTError, isRefreshing: model.usage.isRefreshing) {
+                    Task { await model.refreshUsage() }
+                }
+            } header: {
+                Label("Usage Limits", systemImage: "gauge.with.dots.needle.50percent")
+            }
+        case .deepSeek where model.accounts.hasKey(.deepSeek):
+            Section {
+                DeepSeekUsageView(usage: model.deepSeek)
+            } header: {
+                Label("Balance and Usage", systemImage: "chart.bar")
+            } footer: {
+                footnote("The balance comes from DeepSeek. Requests and tokens are counted on this Mac from DeepSeek’s replies; the cost is an estimate at list prices, with off-peak hours at half price.")
+            }
+        default:
+            EmptyView()
         }
     }
 
@@ -65,9 +115,9 @@ struct PreferencesView: View {
             Toggle("Save meeting audio (M4A)", isOn: $model.preferences.recordsAudio)
                 .help("The call and your microphone are saved on this Mac as one M4A file with the meeting, about 30–60 MB an hour. Recording a conversation without consent is illegal in many countries: tell the participants.")
             Toggle("Offer to start a meeting when a call begins", isOn: $model.preferences.offersMeetingStart)
+                .help("A call is noticed when Zoom, Teams, Telemost, Telegram or another call app uses the microphone for 10 seconds; in a browser, start the meeting yourself.")
             Toggle("Hide Siri+ panels from screen sharing and screenshots", isOn: $model.preferences.hidesPanelsFromCapture)
                 .help("Turn off to take screenshots or record the hint panel. While it is off, people you share your screen with see the hints too.")
-                .help("A call is noticed when Zoom, Teams, Telemost, Telegram or another call app uses the microphone for 10 seconds; in a browser, start the meeting yourself.")
             Picker("Keep chats and meetings", selection: $model.preferences.historyRetentionDays) {
                 Text("Forever").tag(0)
                 ForEach([7, 30, 90, 365], id: \.self) { days in
@@ -187,111 +237,98 @@ struct PreferencesView: View {
 
     // MARK: Providers
 
-    @ViewBuilder
-    private var claudeSettings: some View {
-        Picker("Sign-in", selection: $model.preferences.claudeAuth) {
+    private func authPicker(_ selection: Binding<AuthMethod>) -> some View {
+        Picker("Sign-in", selection: selection) {
             ForEach(AuthMethod.allCases) { method in
                 Text(method.title).tag(method)
             }
         }
-        if model.preferences.claudeAuth == .account {
-            let status = model.accounts.claudeCode
-            if !status.installed {
-                LabeledContent {
-                    Link("Install Claude Code", destination: URL(string: "https://code.claude.com/docs/en/setup")!)
-                } label: {
-                    accountLabel(String(localized: "Claude Code"), detail: String(localized: "Not installed"), ok: false)
-                }
-            } else if status.signedIn {
-                LabeledContent {
-                    Button("Sign Out", role: .destructive) { confirmsClaudeSignOut = true }
-                        .buttonStyle(.glass)
-                        .confirmationDialog("Sign out of Claude Code?", isPresented: $confirmsClaudeSignOut) {
-                            Button("Sign Out", role: .destructive) { Task { await model.signOutOfClaude() } }
-                        } message: {
-                            Text("Siri+ uses Claude Code’s sign-in, so Claude Code in Terminal is signed out too.")
-                        }
-                } label: {
-                    accountLabel(
-                        status.account ?? "Claude",
-                        detail: status.subscription.map { $0.capitalized } ?? String(localized: "Requests use your Claude subscription limits through Claude Code."),
-                        ok: true
-                    )
-                }
-                UsageView(usage: model.usage.claude, error: model.usage.claudeError, isRefreshing: model.usage.isRefreshing) {
-                    Task { await model.refreshUsage() }
-                }
-            } else {
-                LabeledContent {
-                    signInButton(String(localized: "Sign In to Claude")) { await model.signInToClaude() }
-                } label: {
-                    accountLabel(String(localized: "Claude account"), detail: String(localized: "Terminal opens with Claude Code’s sign-in; finish it in the browser. Siri+ notices when you are signed in."), ok: false)
-                }
-            }
-        } else {
-            keyField(for: .claude, hasKey: model.accounts.hasClaudeKey, prompt: "sk-ant-…",
-                     link: URL(string: "https://platform.claude.com/settings/keys")!)
-        }
-        if model.preferences.claudeAuth == .account {
-            modelPicker($model.preferences.claudeModel, options: model.accounts.claudeCodeModels.nonEmpty ?? ModelOption.claudeCodeDefaults)
-        } else {
-            modelPicker($model.preferences.claudeAPIModel, options: model.accounts.claudeAPIModels.nonEmpty ?? ModelOption.claudeAPIDefaults)
-        }
-        effortPicker($model.preferences.claudeEffort, levels: claudeEfforts ?? ModelEffort.claudeLevels)
-    }
-
-    /// Effort levels of the chosen Claude model, nil until its list is loaded.
-    private var claudeEfforts: [String]? {
-        let preferences = model.preferences
-        let options = preferences.claudeAuth == .account
-            ? model.accounts.claudeCodeModels
-            : model.accounts.claudeAPIModels.nonEmpty ?? ModelOption.claudeAPIDefaults
-        let id = preferences.claudeAuth == .account ? preferences.claudeModel : preferences.claudeAPIModel
-        return options.first { $0.id == id }?.efforts
-    }
-
-    /// Effort levels of the chosen ChatGPT model; the account default is its first model.
-    private var openAIEfforts: [String]? {
-        let preferences = model.preferences
-        let options = preferences.openAIAuth == .account ? model.accounts.chatGPTModels : ModelOption.openAIAPIModels
-        let id = preferences.openAIModel.isEmpty
-            ? (preferences.openAIAuth == .account ? options.first?.id : ModelOption.openAIAPIDefault.id)
-            : preferences.openAIModel
-        return options.first { $0.id == id }?.efforts
+        .pickerStyle(.segmented)
     }
 
     @ViewBuilder
-    private var chatGPTSettings: some View {
-        Picker("Sign-in", selection: $model.preferences.openAIAuth) {
-            ForEach(AuthMethod.allCases) { method in
-                Text(method.title).tag(method)
+    private var claudeAccountRow: some View {
+        let status = model.accounts.claudeCode
+        if !status.installed {
+            LabeledContent {
+                Link("Install Claude Code", destination: URL(string: "https://code.claude.com/docs/en/setup")!)
+            } label: {
+                accountLabel(String(localized: "Claude Code"), detail: String(localized: "Not installed"), state: .missing)
             }
-        }
-        if model.preferences.openAIAuth == .account {
-            if let email = model.accounts.chatGPTEmail {
-                LabeledContent {
-                    Button("Sign Out", role: .destructive) { Task { await model.signOutOfChatGPT() } }
-                        .buttonStyle(.glass)
-                } label: {
-                    accountLabel(email, detail: String(localized: "Requests use your ChatGPT subscription limits."), ok: true)
-                }
-                UsageView(usage: model.usage.chatGPT, error: model.usage.chatGPTError, isRefreshing: model.usage.isRefreshing) {
-                    Task { await model.refreshUsage() }
-                }
-            } else {
-                LabeledContent {
-                    signInButton(String(localized: "Sign In to ChatGPT")) { await model.signInToChatGPT() }
-                } label: {
-                    accountLabel(String(localized: "ChatGPT account"), detail: String(localized: "The ChatGPT sign-in page opens in the browser."), ok: false)
-                }
+        } else if status.signedIn {
+            LabeledContent {
+                Button("Sign Out", role: .destructive) { confirmsClaudeSignOut = true }
+                    .buttonStyle(.glass)
+                    .confirmationDialog("Sign out of Claude Code?", isPresented: $confirmsClaudeSignOut) {
+                        Button("Sign Out", role: .destructive) { Task { await model.signOutOfClaude() } }
+                    } message: {
+                        Text("Siri+ uses Claude Code’s sign-in, so Claude Code in Terminal is signed out too.")
+                    }
+            } label: {
+                accountLabel(
+                    status.account ?? "Claude",
+                    detail: status.subscription.map { $0.capitalized } ?? String(localized: "Requests use your Claude subscription limits through Claude Code."),
+                    state: .ok
+                )
             }
-            modelPicker($model.preferences.openAIModel, options: model.accounts.chatGPTModels, defaultTitle: String(localized: "Account default"))
         } else {
-            keyField(for: .openAI, hasKey: model.accounts.hasOpenAIKey, prompt: "sk-…",
-                     link: URL(string: "https://platform.openai.com/api-keys")!)
-            modelPicker($model.preferences.openAIModel, options: ModelOption.openAIAPIModels, defaultTitle: String(localized: "Default (GPT-6.1 Sol)"))
+            LabeledContent {
+                signInButton(String(localized: "Sign In to Claude")) { await model.signInToClaude() }
+            } label: {
+                accountLabel(String(localized: "Claude account"), detail: String(localized: "Terminal opens with Claude Code’s sign-in; finish it in the browser. Siri+ notices when you are signed in."), state: .missing)
+            }
         }
-        effortPicker($model.preferences.openAIEffort, levels: openAIEfforts ?? ModelEffort.openAIAPILevels)
+    }
+
+    @ViewBuilder
+    private var chatGPTAccountRow: some View {
+        if let email = model.accounts.chatGPTEmail {
+            LabeledContent {
+                Button("Sign Out", role: .destructive) { Task { await model.signOutOfChatGPT() } }
+                    .buttonStyle(.glass)
+            } label: {
+                accountLabel(email, detail: String(localized: "Requests use your ChatGPT subscription limits."), state: .ok)
+            }
+        } else {
+            LabeledContent {
+                signInButton(String(localized: "Sign In to ChatGPT")) { await model.signInToChatGPT() }
+            } label: {
+                accountLabel(String(localized: "ChatGPT account"), detail: String(localized: "The ChatGPT sign-in page opens in the browser."), state: .missing)
+            }
+        }
+    }
+
+    /// The models and effort levels of the way of reaching a model chosen above.
+    private struct ModelChoice {
+        let model: Binding<String>
+        let effort: Binding<String>
+        let options: [ModelOption]
+        /// The title of the empty model ID, for providers that pick a default themselves.
+        var defaultTitle: String?
+        /// Levels of the chosen model; the provider's usual levels until its list is loaded.
+        let efforts: [String]
+    }
+
+    private var modelChoice: ModelChoice {
+        let accounts = model.accounts
+        let route = model.preferences.selection.route
+        let (selection, effort, options, defaultTitle, usual): (Binding<String>, Binding<String>, [ModelOption], String?, [String]) = switch route {
+        case .claudeCode:
+            ($model.preferences.claudeModel, $model.preferences.claudeEffort, accounts.claudeCodeModels.nonEmpty ?? ModelOption.claudeCodeDefaults, nil, ModelEffort.claudeLevels)
+        case .claudeAPI:
+            ($model.preferences.claudeAPIModel, $model.preferences.claudeEffort, accounts.claudeAPIModels.nonEmpty ?? ModelOption.claudeAPIDefaults, nil, ModelEffort.claudeLevels)
+        case .chatGPT:
+            ($model.preferences.openAIModel, $model.preferences.openAIEffort, accounts.chatGPTModels, String(localized: "Account default"), ModelEffort.openAIAPILevels)
+        case .openAIAPI:
+            ($model.preferences.openAIModel, $model.preferences.openAIEffort, ModelOption.openAIAPIModels, String(localized: "Default (GPT-6.1 Sol)"), ModelEffort.openAIAPILevels)
+        case .deepSeek:
+            ($model.preferences.deepSeekModel, $model.preferences.deepSeekEffort, accounts.deepSeekModels.nonEmpty ?? ModelOption.deepSeekModels, nil, ModelEffort.deepSeekLevels)
+        }
+        // An empty model is the provider's default: the first model a ChatGPT account lists.
+        let chosen = selection.wrappedValue
+        let id = chosen.isEmpty ? (route == .openAIAPI ? ModelOption.openAIAPIDefault.id : options.first?.id) : chosen
+        let efforts = options.first { $0.id == id }?.efforts ?? usual
+        return ModelChoice(model: selection, effort: effort, options: options, defaultTitle: defaultTitle, efforts: efforts)
     }
 
     // MARK: Export
@@ -356,20 +393,42 @@ struct PreferencesView: View {
                     Text(ModelEffort.title(chosen)).tag(chosen)
                 }
             }
-            footnote("Automatic: brief answers think briefly, detailed ones longer. Meeting hints always think briefly so they arrive in seconds.")
+            .help("How long the model thinks before answering. Deeper thinking is slower and uses more of the limits.")
         }
     }
 
-    private func accountLabel(_ title: String, detail: String, ok: Bool) -> some View {
+    private enum RowState {
+        case ok, missing, warning, progress
+
+        var symbol: String {
+            switch self {
+            case .ok: "checkmark.circle.fill"
+            case .missing: "person.crop.circle.badge.questionmark"
+            case .warning: "exclamationmark.triangle.fill"
+            case .progress: "clock"
+            }
+        }
+
+        var color: Color {
+            switch self {
+            case .ok: .green
+            case .missing, .progress: .secondary
+            case .warning: .orange
+            }
+        }
+    }
+
+    private func accountLabel(_ title: String, detail: String, state: RowState) -> some View {
         HStack(spacing: 10) {
-            Image(systemName: ok ? "checkmark.circle.fill" : "person.crop.circle.badge.questionmark")
+            Image(systemName: state.symbol)
                 .font(.title2)
-                .foregroundStyle(ok ? Color.green : Color.secondary)
+                .foregroundStyle(state.color)
+                .frame(width: 24)
             VStack(alignment: .leading, spacing: 2) {
                 Text(verbatim: title)
                 Text(verbatim: detail)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(state == .warning ? AnyShapeStyle(Color.orange) : AnyShapeStyle(.secondary))
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -392,27 +451,48 @@ struct PreferencesView: View {
         }
     }
 
+    /// A saved key with its check result, or a field that checks a new key before saving it.
     @ViewBuilder
-    private func keyField(for provider: AIProvider, hasKey: Bool, prompt: String, link: URL) -> some View {
-        if hasKey {
+    private func keyField(for provider: AIProvider, prompt: String, link: URL) -> some View {
+        if let status = model.accounts.keys[provider] {
             LabeledContent {
-                Button("Delete Key", role: .destructive) { model.deleteAPIKey(for: provider) }
-                    .buttonStyle(.glass)
+                HStack(spacing: 8) {
+                    if status == .checking {
+                        ProgressView().controlSize(.small)
+                    } else {
+                        Button("Check") { Task { await model.checkSavedKey(provider) } }
+                            .buttonStyle(.glass)
+                            .help("Ask \(provider.title) whether the key still works")
+                    }
+                    Button("Delete Key", role: .destructive) { model.deleteAPIKey(for: provider) }
+                        .buttonStyle(.glass)
+                }
             } label: {
-                accountLabel(String(localized: "API key"), detail: String(localized: "Saved in the keychain"), ok: true)
+                keyLabel(status, provider: provider)
             }
         } else {
+            let isChecking = model.checkingNewKey == provider
+            let canSave = !apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && model.checkingNewKey == nil
+            let save = {
+                guard canSave else { return }
+                Task {
+                    await model.saveAPIKey(apiKey, for: provider)
+                    if model.accounts.hasKey(provider) { apiKey = "" }
+                }
+            }
             LabeledContent {
                 HStack(spacing: 8) {
                     SecureField("API key", text: $apiKey, prompt: Text(verbatim: prompt))
                         .labelsHidden()
                         .frame(minWidth: 200)
-                    Button("Save Key") {
-                        model.saveAPIKey(apiKey, for: provider)
-                        apiKey = ""
+                        .disabled(isChecking)
+                        .onSubmit(save)
+                    if isChecking {
+                        ProgressView().controlSize(.small)
                     }
-                    .buttonStyle(.glassProminent)
-                    .disabled(apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    Button(isChecking ? "Checking…" : "Check and Save", action: save)
+                        .buttonStyle(.glassProminent)
+                        .disabled(!canSave)
                 }
             } label: {
                 VStack(alignment: .leading, spacing: 2) {
@@ -420,6 +500,27 @@ struct PreferencesView: View {
                     Link("Get an API key", destination: link).font(.caption)
                 }
             }
+            if let error = model.newKeyErrors[provider] {
+                Label(error, systemImage: "exclamationmark.triangle.fill")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
+        }
+    }
+
+    private func keyLabel(_ status: KeyStatus, provider: AIProvider) -> some View {
+        let title = String(localized: "\(provider.title) API key")
+        return switch status {
+        case .unchecked:
+            accountLabel(title, detail: String(localized: "Saved in the keychain"), state: .ok)
+        case .checking:
+            accountLabel(title, detail: String(localized: "Checking the key…"), state: .progress)
+        case .valid:
+            accountLabel(title, detail: String(localized: "Saved in the keychain and working"), state: .ok)
+        case .rejected(let message):
+            accountLabel(title, detail: message, state: .warning)
+        case .unverified(let message):
+            accountLabel(title, detail: String(localized: "Saved, but not checked: \(message)"), state: .warning)
         }
     }
 

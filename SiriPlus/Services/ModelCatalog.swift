@@ -3,12 +3,13 @@ import Synchronization
 /// The models each way of reaching a model offers, kept so requests send only an effort the model accepts.
 final class ModelCatalog: Sendable {
     enum Route: Hashable, Sendable {
-        case claudeAPI, claudeCode, openAIAPI, chatGPT
+        case claudeAPI, claudeCode, openAIAPI, chatGPT, deepSeek
     }
 
     private let models = Mutex<[Route: [ModelOption]]>([
         .claudeAPI: ModelOption.claudeAPIDefaults,
         .openAIAPI: ModelOption.openAIAPIModels,
+        .deepSeek: ModelOption.deepSeekModels,
     ])
 
     func update(_ options: [ModelOption], for route: Route) {

@@ -304,6 +304,7 @@ private struct SidePanelView: View {
                 } else {
                     GrowingTextEditor(text: $question, placeholder: "Ask anything…", font: .system(size: 17), onSubmit: submit)
                         .focused($isInputFocused)
+                        .pastesAttachments(isActive: isInputFocused) { model.attach($0) }
                 }
             }
             .font(.system(size: 17, weight: .regular))

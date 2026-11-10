@@ -135,7 +135,19 @@ struct ResponsesClient: Sendable {
 /// ChatGPT models through the OpenAI API with an API key.
 struct OpenAIAPIBackend: ModelBackend {
     static let endpoint = URL(string: "https://api.openai.com/v1/responses")!
+    static let modelsEndpoint = URL(string: "https://api.openai.com/v1/models")!
     let keyStore: any SecretStoring
+
+    /// Asks the Models API whether the key is valid: HTTP 401 means it is not. A restricted key that may not
+    /// list models (403) still authenticates, so it passes.
+    static func checkKey(_ key: String, session: URLSession = .shared) async throws {
+        var request = URLRequest(url: modelsEndpoint)
+        request.timeoutInterval = 20
+        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        let (data, response) = try await session.data(for: request)
+        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard status == 200 || status == 403 else { throw ClaudeError.http(status: status, message: ClaudeClient.errorMessage(from: data)) }
+    }
 
     func stream(_ prompt: PreparedPrompt, model: String) -> AsyncThrowingStream<String, Error> {
         let keyStore = keyStore

@@ -1,6 +1,16 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "%@ API key": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ключ API %@"
+          }
+        }
+      }
+    },
     "%@ cannot be attached: images, PDFs, text, audio and video files are supported.": {
       "localizations": {
         "ru": {
@@ -27,6 +37,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Не удалось прочитать %@."
+          }
+        }
+      }
+    },
+    "%@ did not accept this key. Check that it is copied in full and not revoked.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ не принимает этот ключ. Проверьте, что он скопирован целиком и не отозван."
           }
         }
       }
@@ -187,6 +207,16 @@
         }
       }
     },
+    "30 days": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "30 дней"
+          }
+        }
+      }
+    },
     "5 hours": {
       "localizations": {
         "ru": {
@@ -203,6 +233,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "5 ч"
+          }
+        }
+      }
+    },
+    "7 days": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 дней"
           }
         }
       }
@@ -243,6 +283,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "По умолчанию для аккаунта"
+          }
+        }
+      }
+    },
+    "Add a DeepSeek API key in Settings.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавьте ключ API DeepSeek в настройках."
           }
         }
       }
@@ -337,6 +387,16 @@
         }
       }
     },
+    "Ask %@ whether the key still works": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверить у %@, работает ли ключ"
+          }
+        }
+      }
+    },
     "Ask (⌃⌥Space)": {
       "localizations": {
         "ru": {
@@ -427,12 +487,42 @@
         }
       }
     },
-    "Automatic: brief answers think briefly, detailed ones longer. Meeting hints always think briefly so they arrive in seconds.": {
+    "Automatic effort: brief answers think briefly, detailed ones longer. Meeting hints always think briefly so they arrive in seconds.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Автоматически: над краткими ответами модель думает недолго, над подробными — дольше. Подсказки на созвоне всегда с короткими размышлениями, чтобы приходить за секунды."
+            "value": "Автоматическая глубина: над краткими ответами модель думает недолго, над подробными — дольше. Подсказки на созвоне всегда с короткими размышлениями, чтобы приходить за секунды."
+          }
+        }
+      }
+    },
+    "Balance": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Баланс"
+          }
+        }
+      }
+    },
+    "Balance and Usage": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Баланс и расход"
+          }
+        }
+      }
+    },
+    "Balance: %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Баланс: %@"
           }
         }
       }
@@ -557,12 +647,32 @@
         }
       }
     },
+    "Check": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверить"
+          }
+        }
+      }
+    },
     "Check Now": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Проверить сейчас"
+          }
+        }
+      }
+    },
+    "Check and Save": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверить и сохранить"
           }
         }
       }
@@ -613,6 +723,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Проверяю загрузку…"
+          }
+        }
+      }
+    },
+    "Checking the key…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверяю ключ…"
+          }
+        }
+      }
+    },
+    "Checking…": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Проверяю…"
           }
         }
       }
@@ -807,6 +937,16 @@
         }
       }
     },
+    "Cost": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Стоимость"
+          }
+        }
+      }
+    },
     "Could not load the list of ChatGPT models.": {
       "localizations": {
         "ru": {
@@ -873,6 +1013,36 @@
           "stringUnit": {
             "state": "translated",
             "value": "День"
+          }
+        }
+      }
+    },
+    "DeepSeek balance": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Баланс DeepSeek"
+          }
+        }
+      }
+    },
+    "DeepSeek is overloaded right now. Try again in a minute.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DeepSeek сейчас перегружен. Попробуйте через минуту."
+          }
+        }
+      }
+    },
+    "DeepSeek · %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "DeepSeek · %@"
           }
         }
       }
@@ -987,6 +1157,16 @@
         }
       }
     },
+    "Estimated from DeepSeek’s list prices": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Оценка по прайсу DeepSeek"
+          }
+        }
+      }
+    },
     "Explain what’s on the screen": {
       "localizations": {
         "ru": {
@@ -1033,6 +1213,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Очень высокая"
+          }
+        }
+      }
+    },
+    "Fast and cheap, for hints and everyday questions": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Быстрая и дешёвая, для подсказок и повседневных вопросов"
           }
         }
       }
@@ -1177,12 +1367,42 @@
         }
       }
     },
+    "How long the model thinks before answering. Deeper thinking is slower and uses more of the limits.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сколько модель думает перед ответом. Чем глубже, тем медленнее и тем больше расход лимитов."
+          }
+        }
+      }
+    },
     "If Siri+ is already switched on in System Settings, switch it off and on again: macOS treats every new build as a new app.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Если Siri+ в Системных настройках уже включена, выключите и снова включите её: macOS считает каждую новую сборку новым приложением."
+          }
+        }
+      }
+    },
+    "Including %@ granted by DeepSeek": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Из них %@ — бонус от DeepSeek"
+          }
+        }
+      }
+    },
+    "Input tokens": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Входные токены"
           }
         }
       }
@@ -1507,6 +1727,16 @@
         }
       }
     },
+    "Most capable, about four times the price of Flash": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Самая сильная, примерно вчетверо дороже Flash"
+          }
+        }
+      }
+    },
     "Names are taken from the conversation. In the transcript, “Me” is your microphone and “Them” is everyone in the call.": {
       "localizations": {
         "ru": {
@@ -1653,6 +1883,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Не сейчас"
+          }
+        }
+      }
+    },
+    "Not enough for requests. Top up the balance.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Не хватает на запросы. Пополните баланс."
           }
         }
       }
@@ -1827,6 +2067,16 @@
         }
       }
     },
+    "Output tokens": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Выходные токены"
+          }
+        }
+      }
+    },
     "Panel": {
       "localizations": {
         "ru": {
@@ -1853,6 +2103,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Прошлые созвоны"
+          }
+        }
+      }
+    },
+    "Pasted image": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Вставленная картинка"
           }
         }
       }
@@ -1987,6 +2247,16 @@
         }
       }
     },
+    "Requests": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Запросы"
+          }
+        }
+      }
+    },
     "Requests use your ChatGPT subscription limits.": {
       "localizations": {
         "ru": {
@@ -2007,12 +2277,32 @@
         }
       }
     },
-    "Save Key": {
+    "Reset": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Сохранить ключ"
+            "value": "Сбросить"
+          }
+        }
+      }
+    },
+    "Reset DeepSeek statistics?": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сбросить статистику DeepSeek?"
+          }
+        }
+      }
+    },
+    "Reset Statistics": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сбросить статистику"
           }
         }
       }
@@ -2073,6 +2363,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Сохранён в связке ключей"
+          }
+        }
+      }
+    },
+    "Saved in the keychain and working": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохранён в связке ключей и работает"
+          }
+        }
+      }
+    },
+    "Saved, but not checked: %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сохранён, но не проверен: %@"
           }
         }
       }
@@ -2697,6 +3007,26 @@
         }
       }
     },
+    "The DeepSeek balance has run out. Top it up on platform.deepseek.com.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Баланс DeepSeek закончился. Пополните его на platform.deepseek.com."
+          }
+        }
+      }
+    },
+    "The balance comes from DeepSeek. Requests and tokens are counted on this Mac from DeepSeek’s replies; the cost is an estimate at list prices, with off-peak hours at half price.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Баланс приходит от DeepSeek. Запросы и токены Siri+ считает на этом Mac по ответам DeepSeek. Стоимость — оценка по прайсу, в непиковые часы вдвое дешевле."
+          }
+        }
+      }
+    },
     "The call and your microphone are saved on this Mac as one M4A file with the meeting, about 30–60 MB an hour. Recording a conversation without consent is illegal in many countries: tell the participants.": {
       "localizations": {
         "ru": {
@@ -2733,6 +3063,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "История чатов не сохранена. %@"
+          }
+        }
+      }
+    },
+    "The counted requests and tokens are deleted from this Mac. The balance is not affected.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Подсчитанные запросы и токены удалятся с этого Mac. Баланс не изменится."
           }
         }
       }
@@ -2987,12 +3327,52 @@
         }
       }
     },
+    "Today": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Сегодня"
+          }
+        }
+      }
+    },
+    "Tokens of the answers, thinking included": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Токены ответов вместе с размышлениями"
+          }
+        }
+      }
+    },
+    "Tokens sent to the model: messages, meeting transcript, materials. Repeated ones are billed at the much lower cache price.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Токены, отправленные модели: сообщения, расшифровка встречи, материалы. Повторные оплачиваются по гораздо более низкой цене кэша."
+          }
+        }
+      }
+    },
     "Too many requests or the usage limit is reached. Wait a little.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Слишком много запросов или исчерпан лимит. Подождите немного."
+          }
+        }
+      }
+    },
+    "Top Up": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Пополнить"
           }
         }
       }
@@ -3087,12 +3467,22 @@
         }
       }
     },
-    "Usage limits": {
+    "Usage Limits": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
             "value": "Лимиты"
+          }
+        }
+      }
+    },
+    "Usage on DeepSeek": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Расход на сайте DeepSeek"
           }
         }
       }

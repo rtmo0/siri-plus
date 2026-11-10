@@ -10,8 +10,6 @@ struct UsageView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Label("Usage limits", systemImage: "gauge.with.dots.needle.50percent")
-                    .font(.callout.weight(.medium))
                 if let plan = usage?.plan {
                     Text(verbatim: plan.capitalized)
                         .font(.caption)

@@ -42,23 +42,47 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
     }
 }
 
+/// What Siri+ knows about a saved API key.
+enum KeyStatus: Equatable, Sendable {
+    /// Saved earlier and not checked since launch.
+    case unchecked
+    case checking
+    case valid
+    /// The provider refused the key: requests would fail until it is replaced.
+    case rejected(String)
+    /// The provider could not be reached to check it; the key may well work.
+    case unverified(String)
+}
+
 /// Sign-in state of every way to reach a model, shown in Settings.
 struct ProviderAccounts: Equatable {
     var claudeCode = ClaudeCodeStatus()
-    var hasClaudeKey = false
     var chatGPTEmail: String?
-    var hasOpenAIKey = false
+    /// Saved API keys; a provider without a key is missing.
+    var keys: [AIProvider: KeyStatus] = [:]
     /// Models listed for the signed-in account or the key; empty until loaded.
     var claudeCodeModels: [ModelOption] = []
     var claudeAPIModels: [ModelOption] = []
     var chatGPTModels: [ModelOption] = []
+    var deepSeekModels: [ModelOption] = []
+
+    func hasKey(_ provider: AIProvider) -> Bool { keys[provider] != nil }
+
+    /// A saved key the provider has not refused.
+    func hasUsableKey(_ provider: AIProvider) -> Bool {
+        switch keys[provider] {
+        case nil, .rejected: false
+        default: true
+        }
+    }
 
     func isReady(_ selection: ModelSelection) -> Bool {
-        switch (selection.provider, selection.claudeAuth, selection.openAIAuth) {
-        case (.claude, .account, _): claudeCode.signedIn
-        case (.claude, .apiKey, _): hasClaudeKey
-        case (.openAI, _, .account): chatGPTEmail != nil
-        case (.openAI, _, .apiKey): hasOpenAIKey
+        switch selection.route {
+        case .claudeCode: claudeCode.signedIn
+        case .claudeAPI: hasUsableKey(.claude)
+        case .chatGPT: chatGPTEmail != nil
+        case .openAIAPI: hasUsableKey(.openAI)
+        case .deepSeek: hasUsableKey(.deepSeek)
         }
     }
 }
@@ -67,12 +91,18 @@ struct ProviderAccounts: Equatable {
 struct Credentials {
     var claudeKey: any SecretStoring = KeychainStore(account: "anthropic-api-key")
     var openAIKey: any SecretStoring = KeychainStore(account: "openai-api-key")
+    var deepSeekKey: any SecretStoring = KeychainStore(account: "deepseek-api-key")
     var chatGPT = ChatGPTAccount()
     var claudeCodeStatus: @Sendable () async -> ClaudeCodeStatus = { await ClaudeCodeBackend.status() }
     var claudeCodeSignOut: @Sendable () async throws -> Void = { try await ClaudeCodeBackend.signOut() }
     var claudeUsage: @Sendable () async throws -> AccountUsage = { try await ClaudeCodeBackend.usage() }
     var claudeCodeModels: @Sendable () async throws -> [ModelOption] = { try await ClaudeCodeBackend.models() }
+    /// Lists the key's models, which also checks the key.
     var claudeAPIModels: @Sendable (String) async throws -> [ModelOption] = { try await ClaudeClient(apiKey: $0).models() }
+    var openAIKeyCheck: @Sendable (String) async throws -> Void = { try await OpenAIAPIBackend.checkKey($0) }
+    /// Reads the balance, which also checks the key.
+    var deepSeekBalance: @Sendable (String) async throws -> DeepSeekBalance = { try await DeepSeekClient(apiKey: $0).balance() }
+    var deepSeekModels: @Sendable (String) async throws -> [ModelOption] = { try await DeepSeekClient(apiKey: $0).models() }
 }
 
 @MainActor
@@ -107,6 +137,10 @@ final class AppModel: ObservableObject {
         didSet { syncCatalog() }
     }
     @Published private(set) var isSigningIn = false
+    /// The provider whose new key is being checked before it is saved.
+    @Published private(set) var checkingNewKey: AIProvider?
+    /// Why a new key was not saved, per provider.
+    @Published private(set) var newKeyErrors: [AIProvider: String] = [:]
     @Published var errorMessage: String?
 
     let meeting: MeetingModel
@@ -117,6 +151,7 @@ final class AppModel: ObservableObject {
     let voice: VoiceInput
     let permissions = PermissionCenter()
     let usage: UsageModel
+    let deepSeek: DeepSeekUsageModel
     /// Shows the floating hint panel; set by the app scene.
     var showHintPanel: (() -> Void)?
 
@@ -140,7 +175,8 @@ final class AppModel: ObservableObject {
         chatStore: ChatHistoryStore = ChatHistoryStore(),
         microphoneUsage: any MicrophoneUsageSource = CoreAudioMicrophoneUsage(),
         updateChecker: any UpdateChecking = GitHubUpdateChecker(),
-        meetingTiming: MeetingModel.Timing = MeetingModel.Timing()
+        meetingTiming: MeetingModel.Timing = MeetingModel.Timing(),
+        usageLedger: UsageLedger = UsageLedger()
     ) {
         let catalog = ModelCatalog()
         let assistant = assistant ?? CloudAssistantService(
@@ -148,6 +184,7 @@ final class AppModel: ObservableObject {
             claudeCode: ClaudeCodeBackend(),
             openAIAPI: OpenAIAPIBackend(keyStore: credentials.openAIKey),
             chatGPT: ChatGPTAccountBackend(account: credentials.chatGPT),
+            deepSeek: DeepSeekBackend(keyStore: credentials.deepSeekKey, ledger: usageLedger),
             catalog: catalog
         )
         self.assistant = assistant
@@ -169,12 +206,18 @@ final class AppModel: ObservableObject {
         voice = VoiceInput()
         let chatGPTAccount = credentials.chatGPT
         usage = UsageModel(fetchClaude: credentials.claudeUsage, fetchChatGPT: { try await chatGPTAccount.usage() })
+        let deepSeekKey = credentials.deepSeekKey, fetchDeepSeekBalance = credentials.deepSeekBalance
+        deepSeek = DeepSeekUsageModel(ledger: usageLedger) {
+            guard let key = try deepSeekKey.read(), !key.isEmpty else { throw DeepSeekError.missingAPIKey }
+            return try await fetchDeepSeekBalance(key)
+        }
         currentPreferences = { [unowned self] in self.preferences }
-        accounts.hasClaudeKey = (try? credentials.claudeKey.read())?.isEmpty == false
-        accounts.hasOpenAIKey = (try? credentials.openAIKey.read())?.isEmpty == false
+        for provider in AIProvider.allCases where (try? store(for: provider).read())?.isEmpty == false {
+            accounts.keys[provider] = .unchecked
+        }
         meeting.onFinish = { [history] in history.add($0) }
         // Views observing the app model also follow meeting and history state (menu bar icon, sidebar badge, errors).
-        meetingChanges = meeting.objectWillChange.merge(with: history.objectWillChange, voice.objectWillChange, permissions.objectWillChange, chats.objectWillChange, usage.objectWillChange)
+        meetingChanges = meeting.objectWillChange.merge(with: history.objectWillChange, voice.objectWillChange, permissions.objectWillChange, chats.objectWillChange, usage.objectWillChange, deepSeek.objectWillChange)
             .sink { [weak self] in self?.objectWillChange.send() }
     }
 
@@ -316,6 +359,21 @@ final class AppModel: ObservableObject {
         errorMessage = failures.isEmpty ? nil : failures.joined(separator: "\n")
     }
 
+    /// Attaches what ⌘V brought: copied files as if they were dropped, a copied picture as an image.
+    func attach(_ pasted: PastedContent) {
+        switch pasted {
+        case .files(let urls):
+            attach(urls)
+        case .image(let image):
+            do {
+                pendingAttachments.append(try ChatAttachment.pasted(image))
+                errorMessage = nil
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
     private func transcribe(_ url: URL) {
         let name = url.lastPathComponent
         processingAttachments.append(name)
@@ -366,24 +424,59 @@ final class AppModel: ObservableObject {
         if accounts.claudeCode.signedIn, accounts.claudeCodeModels.isEmpty {
             accounts.claudeCodeModels = (try? await credentials.claudeCodeModels()) ?? []
         }
-        if accounts.hasClaudeKey, accounts.claudeAPIModels.isEmpty {
-            await loadClaudeAPIModels()
-        }
         if accounts.chatGPTEmail != nil, accounts.chatGPTModels.isEmpty {
             accounts.chatGPTModels = (try? await credentials.chatGPT.models()) ?? []
+        }
+        // Keys are checked once per launch and again while they could not be reached; the DeepSeek balance
+        // is fetched every time, quietly.
+        for provider in AIProvider.allCases {
+            switch accounts.keys[provider] {
+            case .unchecked?: await checkSavedKey(provider)
+            case .unverified?: await checkSavedKey(provider, quietly: true)
+            case .valid? where provider == .deepSeek: await checkSavedKey(provider, quietly: true)
+            default: break
+            }
         }
         await refreshUsage()
     }
 
-    private func loadClaudeAPIModels() async {
-        guard let key = try? credentials.claudeKey.read(), !key.isEmpty else { return }
-        accounts.claudeAPIModels = (try? await credentials.claudeAPIModels(key)) ?? []
+    /// Checks a saved key with its provider and loads what it gives access to.
+    /// - Parameter quietly: keeps the current status on screen while checking.
+    func checkSavedKey(_ provider: AIProvider, quietly: Bool = false) async {
+        guard accounts.hasKey(provider), let key = try? store(for: provider).read(), !key.isEmpty else { return }
+        if !quietly { accounts.keys[provider] = .checking }
+        let status = await check(key, for: provider)
+        // The key may have been deleted meanwhile.
+        if accounts.hasKey(provider) { accounts.keys[provider] = status }
+    }
+
+    /// Asks the provider whether it accepts the key; on success, keeps its models and balance.
+    private func check(_ key: String, for provider: AIProvider) async -> KeyStatus {
+        do {
+            switch provider {
+            case .claude:
+                accounts.claudeAPIModels = try await credentials.claudeAPIModels(key)
+            case .openAI:
+                try await credentials.openAIKeyCheck(key)
+            case .deepSeek:
+                deepSeek.show(try await credentials.deepSeekBalance(key))
+                if let models = try? await credentials.deepSeekModels(key), !models.isEmpty {
+                    accounts.deepSeekModels = models
+                }
+            }
+            return .valid
+        } catch ClaudeError.http(status: 401, _) {
+            return .rejected(String(localized: "\(provider.title) did not accept this key. Check that it is copied in full and not revoked."))
+        } catch {
+            return .unverified(error.localizedDescription)
+        }
     }
 
     /// Lets requests send only the efforts the listed models accept.
     private func syncCatalog() {
         if !accounts.claudeCodeModels.isEmpty { catalog.update(accounts.claudeCodeModels, for: .claudeCode) }
         if !accounts.claudeAPIModels.isEmpty { catalog.update(accounts.claudeAPIModels, for: .claudeAPI) }
+        if !accounts.deepSeekModels.isEmpty { catalog.update(accounts.deepSeekModels, for: .deepSeek) }
         if !accounts.chatGPTModels.isEmpty { catalog.update(accounts.chatGPTModels, for: .chatGPT) }
     }
 
@@ -392,27 +485,40 @@ final class AppModel: ObservableObject {
         await usage.refresh(claude: accounts.claudeCode.signedIn, chatGPT: accounts.chatGPTEmail != nil)
     }
 
-    func saveAPIKey(_ key: String, for provider: AIProvider) {
+    /// Checks a new key with its provider and saves it in the keychain unless the provider refuses it.
+    /// A key that could not be checked (no connection) is saved and marked as unverified.
+    func saveAPIKey(_ key: String, for provider: AIProvider) async {
         let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        guard !trimmed.isEmpty, checkingNewKey == nil else { return }
+        checkingNewKey = provider
+        newKeyErrors[provider] = nil
+        defer { checkingNewKey = nil }
+        let status = await check(trimmed, for: provider)
+        if case .rejected(let message) = status {
+            newKeyErrors[provider] = message
+            if provider == .deepSeek { deepSeek.clearBalance() }
+            return
+        }
         do {
             try store(for: provider).save(trimmed)
-            setHasKey(true, for: provider)
-            errorMessage = nil
-            if provider == .claude {
-                accounts.claudeAPIModels = []
-                Task { await loadClaudeAPIModels() }
-            }
+            accounts.keys[provider] = status
         } catch {
-            errorMessage = String(localized: "The key was not saved. \(error.localizedDescription)")
+            newKeyErrors[provider] = String(localized: "The key was not saved. \(error.localizedDescription)")
         }
     }
 
     func deleteAPIKey(for provider: AIProvider) {
         do {
             try store(for: provider).delete()
-            setHasKey(false, for: provider)
-            if provider == .claude { accounts.claudeAPIModels = [] }
+            accounts.keys[provider] = nil
+            newKeyErrors[provider] = nil
+            switch provider {
+            case .claude: accounts.claudeAPIModels = []
+            case .openAI: break
+            case .deepSeek:
+                accounts.deepSeekModels = []
+                deepSeek.clearBalance()
+            }
         } catch {
             errorMessage = String(localized: "The key was not deleted. \(error.localizedDescription)")
         }
@@ -470,7 +576,11 @@ final class AppModel: ObservableObject {
     }
 
     private func store(for provider: AIProvider) -> any SecretStoring {
-        provider == .claude ? credentials.claudeKey : credentials.openAIKey
+        switch provider {
+        case .claude: credentials.claudeKey
+        case .openAI: credentials.openAIKey
+        case .deepSeek: credentials.deepSeekKey
+        }
     }
 
     /// Saves the chat on screen, creating it on its first message.
@@ -482,10 +592,6 @@ final class AppModel: ObservableObject {
         conversation.meetingID = chatMeeting?.id
         chats.upsert(conversation)
         currentChatID = id
-    }
-
-    private func setHasKey(_ value: Bool, for provider: AIProvider) {
-        if provider == .claude { accounts.hasClaudeKey = value } else { accounts.hasOpenAIKey = value }
     }
 
     private func finishReply() {

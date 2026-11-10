@@ -33,6 +33,24 @@ struct ModelOption: Identifiable, Hashable, Sendable {
 
     static let openAIAPIDefault = openAIAPIModels[1]
 
+    /// DeepSeek models, used until the key lists its own.
+    static let deepSeekModels: [ModelOption] = [
+        deepSeek("deepseek-flash"),
+        deepSeek("deepseek-v4-pro"),
+    ]
+
+    static let deepSeekDefault = deepSeekModels[0]
+
+    /// A DeepSeek model as `GET /models` lists it: every DeepSeek model thinks with the same levels.
+    static func deepSeek(_ id: String) -> ModelOption {
+        let (title, detail): (String, String?) = switch id {
+        case "deepseek-flash": ("DeepSeek Flash", String(localized: "Fast and cheap, for hints and everyday questions"))
+        case "deepseek-v4-pro": ("DeepSeek V4 Pro", String(localized: "Most capable, about four times the price of Flash"))
+        default: (id.split(separator: "-").map { $0 == "deepseek" ? "DeepSeek" : $0.prefix(1).uppercased() + $0.dropFirst() }.joined(separator: " "), nil)
+        }
+        return ModelOption(id: id, title: title, detail: detail, efforts: ModelEffort.deepSeekLevels)
+    }
+
     /// Claude API models that accept the server-side refusal fallback ("default" form).
     static let claudeFallbackModels: Set<String> = ["claude-fable-5-1", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5"]
 
@@ -49,6 +67,8 @@ enum ModelEffort {
     static let order = ["none", "minimal", "low", "medium", "high", "xhigh", "max", "ultra"]
     static let claudeLevels = ["low", "medium", "high", "xhigh", "max"]
     static let openAIAPILevels = ["low", "medium", "high"]
+    /// DeepSeek's `reasoning_effort`; "none" answers without thinking.
+    static let deepSeekLevels = ["none", "low", "high", "max"]
 
     static func title(_ level: String) -> String {
         switch level {

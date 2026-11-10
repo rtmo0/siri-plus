@@ -127,7 +127,7 @@ struct AppModelTests {
         #expect(model.snapshot == nil)
     }
 
-    @Test func apiKeysAreStoredPerProvider() throws {
+    @Test func apiKeysAreStoredPerProvider() async throws {
         var credentials = Credentials.inMemory()
         let claude = MemorySecretStore(), openAI = MemorySecretStore()
         credentials.claudeKey = claude
@@ -136,20 +136,91 @@ struct AppModelTests {
         model.preferences.claudeAuth = .apiKey
         #expect(!model.isModelReady)
 
-        model.saveAPIKey("  sk-ant-test \n", for: .claude)
-        #expect(model.accounts.hasClaudeKey)
-        #expect(!model.accounts.hasOpenAIKey)
+        await model.saveAPIKey("  sk-ant-test \n", for: .claude)
+        #expect(model.accounts.hasKey(.claude))
+        #expect(!model.accounts.hasKey(.openAI))
         #expect(try claude.read() == "sk-ant-test")
         #expect(model.isModelReady)
 
         model.preferences.provider = .openAI
         model.preferences.openAIAuth = .apiKey
         #expect(!model.isModelReady)
-        model.saveAPIKey("sk-openai", for: .openAI)
+        await model.saveAPIKey("sk-openai", for: .openAI)
         #expect(model.isModelReady)
         model.deleteAPIKey(for: .claude)
         #expect(try claude.read() == nil)
         #expect(try openAI.read() == "sk-openai")
+    }
+
+    @Test func aRefusedKeyIsNotSaved() async throws {
+        var credentials = Credentials.inMemory()
+        let store = MemorySecretStore()
+        credentials.deepSeekKey = store
+        credentials.deepSeekBalance = { key in
+            guard key == "sk-good" else { throw ClaudeError.http(status: 401, message: "Authentication Fails") }
+            return DeepSeekBalance(isAvailable: true, amounts: [.init(currency: "USD", total: 4.2, granted: 0, toppedUp: 4.2)])
+        }
+        let model = makeModel(credentials: credentials)
+        model.preferences.provider = .deepSeek
+        #expect(!model.isModelReady)
+
+        await model.saveAPIKey("sk-bad", for: .deepSeek)
+        #expect(try store.read() == nil)
+        #expect(!model.accounts.hasKey(.deepSeek))
+        #expect(model.newKeyErrors[.deepSeek] != nil)
+
+        await model.saveAPIKey("sk-good", for: .deepSeek)
+        #expect(try store.read() == "sk-good")
+        #expect(model.accounts.keys[.deepSeek] == .valid)
+        #expect(model.newKeyErrors[.deepSeek] == nil)
+        #expect(model.deepSeek.balance?.formatted(locale: Locale(identifier: "en_US")) == "$4.20")
+        #expect(model.isModelReady)
+
+        model.deleteAPIKey(for: .deepSeek)
+        #expect(model.deepSeek.balance == nil)
+        #expect(!model.isModelReady)
+    }
+
+    @Test func aKeyThatCannotBeCheckedIsSavedAsUnverified() async throws {
+        var credentials = Credentials.inMemory()
+        credentials.openAIKeyCheck = { _ in throw URLError(.notConnectedToInternet) }
+        let model = makeModel(credentials: credentials)
+        model.preferences.provider = .openAI
+        model.preferences.openAIAuth = .apiKey
+        await model.saveAPIKey("sk-openai", for: .openAI)
+        guard case .unverified? = model.accounts.keys[.openAI] else {
+            Issue.record("Expected an unverified key, got \(String(describing: model.accounts.keys[.openAI]))")
+            return
+        }
+        #expect(model.isModelReady)
+    }
+
+    @Test func aSavedKeyRefusedLaterBlocksRequests() async throws {
+        var credentials = Credentials.inMemory()
+        credentials.claudeKey = MemorySecretStore("sk-ant-revoked")
+        credentials.claudeAPIModels = { _ in throw ClaudeError.http(status: 401, message: "invalid x-api-key") }
+        let model = makeModel(credentials: credentials)
+        model.preferences.claudeAuth = .apiKey
+        #expect(model.accounts.keys[.claude] == .unchecked)
+        #expect(model.isModelReady)
+        await model.refreshAccounts()
+        guard case .rejected? = model.accounts.keys[.claude] else {
+            Issue.record("Expected a rejected key")
+            return
+        }
+        #expect(!model.isModelReady)
+    }
+
+    @Test func pastedPictureIsAttachedAsAnImage() throws {
+        let model = makeModel()
+        let image = NSImage(size: NSSize(width: 4, height: 4), flipped: false) { rect in
+            NSColor.red.setFill()
+            rect.fill()
+            return true
+        }
+        model.attach(PastedContent.image(image))
+        #expect(model.pendingAttachments.count == 1)
+        #expect(model.pendingAttachments.first?.imageData != nil)
     }
 
     @Test func accountsReflectClaudeCodeSignIn() async {
@@ -238,7 +309,8 @@ struct AppModelTests {
             credentials: credentials,
             historyStore: MeetingHistoryStore(url: FileManager.default.temporaryDirectory.appending(path: "\(UUID().uuidString).json")),
             chatStore: ChatHistoryStore(url: FileManager.default.temporaryDirectory.appending(path: "chats-\(UUID().uuidString).json")),
-            microphoneUsage: NoMicrophoneUsage()
+            microphoneUsage: NoMicrophoneUsage(),
+            usageLedger: UsageLedger(url: nil)
         )
     }
 }
@@ -309,12 +381,16 @@ extension Credentials {
         Credentials(
             claudeKey: MemorySecretStore(),
             openAIKey: MemorySecretStore(),
+            deepSeekKey: MemorySecretStore(),
             chatGPT: ChatGPTAccount(store: MemorySecretStore()),
             claudeCodeStatus: { ClaudeCodeStatus() },
             claudeCodeSignOut: {},
             claudeUsage: { throw ClaudeCodeError.notInstalled },
             claudeCodeModels: { throw ClaudeCodeError.notInstalled },
-            claudeAPIModels: { _ in throw ClaudeError.missingAPIKey }
+            claudeAPIModels: { _ in ModelOption.claudeAPIDefaults },
+            openAIKeyCheck: { _ in },
+            deepSeekBalance: { _ in DeepSeekBalance(isAvailable: true, amounts: []) },
+            deepSeekModels: { _ in ModelOption.deepSeekModels }
         )
     }
 }

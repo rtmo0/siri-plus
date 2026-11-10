@@ -63,7 +63,7 @@ struct PreparedPrompt: Sendable, Equatable {
     var isLive = false
 }
 
-/// One way of reaching a model: Claude API, Claude Code, OpenAI API or a ChatGPT account.
+/// One way of reaching a model: Claude API, Claude Code, OpenAI API, a ChatGPT account or DeepSeek.
 protocol ModelBackend: Sendable {
     func stream(_ prompt: PreparedPrompt, model: String) -> AsyncThrowingStream<String, Error>
 }
@@ -193,6 +193,7 @@ struct CloudAssistantService: AssistantService, HintService, SummaryService {
     let claudeCode: any ModelBackend
     let openAIAPI: any ModelBackend
     let chatGPT: any ModelBackend
+    let deepSeek: any ModelBackend
     var catalog = ModelCatalog()
 
     func reply(to request: AssistantRequest) -> AsyncThrowingStream<String, Error> {
@@ -208,16 +209,18 @@ struct CloudAssistantService: AssistantService, HintService, SummaryService {
     }
 
     private func route(_ prompt: PreparedPrompt, selection: ModelSelection) -> AsyncThrowingStream<String, Error> {
-        let (backend, route, model, chosen): (any ModelBackend, ModelCatalog.Route, String, String) =
-            switch (selection.provider, selection.claudeAuth, selection.openAIAuth) {
-            case (.claude, .apiKey, _): (claudeAPI, .claudeAPI, selection.claudeModel, selection.claudeEffort)
-            case (.claude, .account, _): (claudeCode, .claudeCode, selection.claudeModel, selection.claudeEffort)
-            case (.openAI, _, .apiKey): (openAIAPI, .openAIAPI, selection.openAIModel, selection.openAIEffort)
-            case (.openAI, _, .account): (chatGPT, .chatGPT, selection.openAIModel, selection.openAIEffort)
-            }
+        let route = selection.route
+        let backend: any ModelBackend = switch route {
+        case .claudeAPI: claudeAPI
+        case .claudeCode: claudeCode
+        case .openAIAPI: openAIAPI
+        case .chatGPT: chatGPT
+        case .deepSeek: deepSeek
+        }
+        let model = selection.model
         var prompt = prompt
         prompt.effort = prompt.effort.flatMap { preferred in
-            ModelEffort.resolve(chosen: chosen, preferred: preferred, isLive: prompt.isLive, supported: catalog.efforts(for: route, model: model))
+            ModelEffort.resolve(chosen: selection.effort, preferred: preferred, isLive: prompt.isLive, supported: catalog.efforts(for: route, model: model))
         }
         return backend.stream(prompt, model: model)
     }

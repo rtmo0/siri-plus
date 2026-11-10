@@ -92,3 +92,37 @@ extension ChatAttachment {
         text.count > textLimit ? String(text.prefix(textLimit)) + "\n[…]" : text
     }
 }
+
+/// What ⌘V brings into a request besides plain text: copied files, or a copied picture.
+enum PastedContent {
+    case files([URL])
+    case image(NSImage)
+
+    /// Reads the clipboard; nil when it holds text to paste as usual.
+    static func read(from pasteboard: NSPasteboard = .general) -> PastedContent? {
+        // Files copied in Finder; the clipboard also carries their names and icons, which are not wanted.
+        if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL], !urls.isEmpty {
+            return .files(urls)
+        }
+        guard pasteboard.canReadObject(forClasses: [NSImage.self], options: nil) else { return nil }
+        // Spreadsheets and documents copy text together with a picture of it: the text is what is meant.
+        // A browser's "Copy Image" may add the image's address, which is not worth pasting instead.
+        let text = pasteboard.string(forType: .string)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard text.isEmpty || isWebAddress(text), let image = NSImage(pasteboard: pasteboard) else { return nil }
+        return .image(image)
+    }
+
+    static func isWebAddress(_ text: String) -> Bool {
+        guard !text.contains(where: \.isWhitespace), let scheme = URL(string: text)?.scheme?.lowercased() else { return false }
+        return scheme == "http" || scheme == "https"
+    }
+}
+
+extension ChatAttachment {
+    /// A picture from the clipboard, as the JPEG every provider accepts.
+    static func pasted(_ image: NSImage, name: String = String(localized: "Pasted image")) throws -> ChatAttachment {
+        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil),
+              let jpeg = ScreenCaptureService.jpeg(cgImage) else { throw AttachmentError.unreadable(name) }
+        return ChatAttachment(name: name, content: .image(jpeg))
+    }
+}

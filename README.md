@@ -30,11 +30,12 @@ The interface is in English and Russian and follows the system language. Swift 6
 | ✅ | Siri-style ask panel on ⌃⌥Space with voice dictation | Mac + model |
 | ✅ | Chat with saved history and search | Mac + model |
 | ✅ | Export chats, meetings or the whole history to Markdown | Mac |
-| ✅ | Attach images, PDFs, text and code files | Mac + model |
+| ✅ | Attach images, PDFs, text and code files; paste pictures and copied files with ⌘V | Mac + model |
 | ✅ | Transcribe audio and video files (MP3, M4A, WAV, AIFF, MP4, MOV…) | Mac |
 | ✅ | Claude: browser sign-in through Claude Code, or an API key | model |
 | ✅ | Every model your account offers, with its own effort levels | model |
 | ✅ | ChatGPT: browser sign-in to your account, or an API key | model |
+| ✅ | DeepSeek: an API key, checked before it is saved, with balance and token statistics | model |
 | ✅ | Subscription limits: how much is left and when it resets | Mac |
 | ✅ | Desktop widget and a Shortcuts action | Mac |
 | ✅ | Updates itself from GitHub releases | Mac |
@@ -75,7 +76,7 @@ Tell participants you use an assistant: recording a conversation without consent
 
 - **⌃⌥Space** in any app opens a translucent panel that starts listening right away. Speak a command; it is sent when you fall silent for 1.5 seconds. Press again to send at once.
 - The panel sits in the top-right corner with the same margin as widgets. Drag it by any empty area; the place is remembered.
-- Attach files with the paperclip or drag and drop. Images go to the model as images; PDF, text and code are read on the Mac; audio and video are transcribed on the Mac and only the transcript is sent. Telegram voice notes (OGG/Opus) need converting first.
+- Attach files with the paperclip, drag and drop, or ⌘V: a copied screenshot or picture is attached as an image, files copied in Finder as files; text pastes as usual. Images go to the model as images; PDF, text and code are read on the Mac; audio and video are transcribed on the Mac and only the transcript is sent. Telegram voice notes (OGG/Opus) need converting first.
 - The input grows up to 13 lines, then scrolls. Return sends, Shift-Return adds a line.
 
 ## Models and sign-in
@@ -84,12 +85,17 @@ Tell participants you use an assistant: recording a conversation without consent
 | --- | --- | --- |
 | **Claude** | Through the official [Claude Code](https://code.claude.com/docs/en/setup): “Sign in to Claude” opens Terminal with `claude auth login`. Requests run through `claude -p` in safe mode (no tools, no saved sessions) and use your Pro/Max limits. | A key from [Claude Console](https://platform.claude.com/settings/keys); direct streaming requests to `api.anthropic.com`. |
 | **ChatGPT** | OAuth sign-in to your ChatGPT account (PKCE, loopback on port 1455/1457), as in Codex. Tokens live in the Keychain and refresh automatically. | An OpenAI API key, Responses API. |
+| **DeepSeek** | — | A key from [DeepSeek Platform](https://platform.deepseek.com/api_keys); streaming Chat Completions at `api.deepseek.com` (DeepSeek Flash, V4 Pro and whatever the key lists). |
+
+Every API key is checked with its provider before it is saved: a key the provider refuses is not saved, and a key that could not be checked (no connection) is saved and checked again later.
 
 The model list comes from your account: with a Claude sign-in, every model Claude Code offers you (Opus, Sonnet, Haiku, Fable and pinned older versions); with an API key, the models the key can use; with ChatGPT, the models your account lists. Haiku is the fastest for meeting hints (the answer starts in about two seconds).
 
 **Effort** sets how long the model thinks before answering, from low to maximum. Settings shows only the levels the chosen model accepts. “Automatic” thinks briefly for brief answers and longer for detailed ones. Meeting hints always think briefly so they arrive in seconds.
 
 With an account sign-in, Siri+ shows what is left of your subscription limits and when they reset: in Settings, in the sidebar status line and in the menu bar menu. Claude limits come from `claude -p /usage`, ChatGPT limits from the account's usage endpoint. API keys have no subscription limits.
+
+With DeepSeek, Settings shows the account balance (from `GET /user/balance`) and what requests from this Mac used today, in 7 and in 30 days: requests, input and output tokens and an estimated cost at DeepSeek's list prices (off-peak hours at half price). The counts come from the `usage` of each reply and stay in `~/Library/Application Support/SiriPlus/deepseek-usage.json`.
 
 Subscription sign-in is for personal use on your own Mac.
 

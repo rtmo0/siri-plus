@@ -49,9 +49,20 @@ enum ReplyStyle: String, CaseIterable, Codable, Identifiable, Sendable {
 enum AIProvider: String, CaseIterable, Codable, Identifiable, Sendable {
     case claude
     case openAI
+    case deepSeek
 
     var id: String { rawValue }
-    var title: String { self == .claude ? "Claude" : "ChatGPT" }
+
+    var title: String {
+        switch self {
+        case .claude: "Claude"
+        case .openAI: "ChatGPT"
+        case .deepSeek: "DeepSeek"
+        }
+    }
+
+    /// DeepSeek has no subscription sign-in: it is reached with an API key only.
+    var offersAccountSignIn: Bool { self != .deepSeek }
 }
 
 enum AuthMethod: String, CaseIterable, Codable, Identifiable, Sendable {
@@ -78,6 +89,35 @@ struct ModelSelection: Equatable, Sendable {
     /// Effort chosen in Settings for each provider, or `ModelEffort.automatic`.
     var claudeEffort = ModelEffort.automatic
     var openAIEffort = ModelEffort.automatic
+    var deepSeekModel = ModelOption.deepSeekDefault.id
+    var deepSeekEffort = ModelEffort.automatic
+
+    /// The way of reaching the chosen model.
+    var route: ModelCatalog.Route {
+        switch provider {
+        case .claude: claudeAuth == .account ? .claudeCode : .claudeAPI
+        case .openAI: openAIAuth == .account ? .chatGPT : .openAIAPI
+        case .deepSeek: .deepSeek
+        }
+    }
+
+    /// The chosen model of the chosen provider.
+    var model: String {
+        switch provider {
+        case .claude: claudeModel
+        case .openAI: openAIModel
+        case .deepSeek: deepSeekModel
+        }
+    }
+
+    /// The effort chosen for the chosen provider.
+    var effort: String {
+        switch provider {
+        case .claude: claudeEffort
+        case .openAI: openAIEffort
+        case .deepSeek: deepSeekEffort
+        }
+    }
 }
 
 enum HintMode: String, CaseIterable, Codable, Identifiable, Sendable {
@@ -112,6 +152,8 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
     var openAIModel = ""
     var openAIAuth: AuthMethod = .account
     var openAIEffort = ModelEffort.automatic
+    var deepSeekModel = ModelOption.deepSeekDefault.id
+    var deepSeekEffort = ModelEffort.automatic
     var hintMode: HintMode = .questionsAndTopic
     var transcriptionLocale = systemLocale
     var capturesMicrophone = true
@@ -139,6 +181,8 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         openAIModel: String = "",
         openAIAuth: AuthMethod = .account,
         openAIEffort: String = ModelEffort.automatic,
+        deepSeekModel: String = ModelOption.deepSeekDefault.id,
+        deepSeekEffort: String = ModelEffort.automatic,
         hintMode: HintMode = .questionsAndTopic,
         transcriptionLocale: String = systemLocale,
         capturesMicrophone: Bool = true,
@@ -159,6 +203,8 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         self.openAIModel = openAIModel
         self.openAIAuth = openAIAuth
         self.openAIEffort = openAIEffort
+        self.deepSeekModel = deepSeekModel
+        self.deepSeekEffort = deepSeekEffort
         self.hintMode = hintMode
         self.transcriptionLocale = transcriptionLocale
         self.capturesMicrophone = capturesMicrophone
@@ -187,6 +233,8 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         openAIModel = try container.decodeIfPresent(String.self, forKey: .openAIModel) ?? defaults.openAIModel
         openAIAuth = (try? container.decodeIfPresent(AuthMethod.self, forKey: .openAIAuth)) ?? defaults.openAIAuth
         openAIEffort = try container.decodeIfPresent(String.self, forKey: .openAIEffort) ?? defaults.openAIEffort
+        deepSeekModel = try container.decodeIfPresent(String.self, forKey: .deepSeekModel) ?? defaults.deepSeekModel
+        deepSeekEffort = try container.decodeIfPresent(String.self, forKey: .deepSeekEffort) ?? defaults.deepSeekEffort
         hintMode = (try? container.decodeIfPresent(HintMode.self, forKey: .hintMode)) ?? defaults.hintMode
         transcriptionLocale = try container.decodeIfPresent(String.self, forKey: .transcriptionLocale) ?? defaults.transcriptionLocale
         capturesMicrophone = try container.decodeIfPresent(Bool.self, forKey: .capturesMicrophone) ?? defaults.capturesMicrophone
@@ -210,7 +258,9 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
             openAIModel: openAIModel,
             openAIAuth: openAIAuth,
             claudeEffort: claudeEffort,
-            openAIEffort: openAIEffort
+            openAIEffort: openAIEffort,
+            deepSeekModel: deepSeekModel,
+            deepSeekEffort: deepSeekEffort
         )
     }
 

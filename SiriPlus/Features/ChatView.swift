@@ -258,6 +258,7 @@ struct ChatView: View {
             } else {
                 GrowingTextEditor(text: $model.draft, placeholder: "Type a request…", onSubmit: send)
                     .focused($isComposerFocused)
+                    .pastesAttachments(isActive: isComposerFocused) { model.attach($0) }
                     .padding(.vertical, 3)
                     .accessibilityLabel("Request text")
             }

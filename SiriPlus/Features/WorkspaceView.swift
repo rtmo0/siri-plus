@@ -59,6 +59,10 @@ struct WorkspaceView: View {
                     Label("\(model.preferences.provider.title) · \(compact)", systemImage: "gauge.with.dots.needle.50percent")
                         .foregroundStyle(usage.limits.contains { $0.remainingPercent < 10 } ? .red : .green)
                         .help(usage.limits.map(\.summary).joined(separator: "\n"))
+                } else if model.preferences.provider == .deepSeek, let balance = model.deepSeek.balance {
+                    Label("DeepSeek · \(balance.formatted)", systemImage: "creditcard")
+                        .foregroundStyle(balance.isAvailable ? .green : .red)
+                        .help("DeepSeek balance")
                 } else {
                     Label("\(model.preferences.provider.title) connected", systemImage: "checkmark.circle.fill")
                         .foregroundStyle(.green)

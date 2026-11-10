@@ -118,6 +118,8 @@ private struct AssistantMenu: View {
             Text("\(model.preferences.provider.title) connected")
             if let usage = model.usage.usage(for: model.preferences.selection) {
                 ForEach(usage.limits) { Text($0.summary) }
+            } else if model.preferences.provider == .deepSeek, let balance = model.deepSeek.balance {
+                Text("Balance: \(balance.formatted)")
             }
         } else {
             Text("Sign-in required")

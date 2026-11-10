@@ -75,17 +75,30 @@ final class HintOverlay: NSObject, NSWindowDelegate {
     }
 
     private func place(_ panel: NSPanel) {
-        guard let frame = placement() else { return }
+        guard let frame = placement(), frame != panel.frame else { return }
         isPlacing = true
         panel.setFrame(frame, display: true)
         isPlacing = false
     }
 
+    /// A resize waiting for the next turn of the run loop.
+    private var fitScheduled = false
+
     /// Called by the view whenever the card's height changes; the top edge stays where it is.
+    /// The window is resized after the current layout pass, not inside it: resizing it from the card's
+    /// geometry callback started another pass that measured the card again, and typing in the panel
+    /// could loop until AppKit stopped the app ("too many Update Constraints passes").
     func fit(cardHeight: CGFloat) {
+        guard abs(cardHeight - self.cardHeight) >= 0.5 else { return }
         self.cardHeight = cardHeight
-        guard let panel, panel.isVisible else { return }
-        place(panel)
+        guard !fitScheduled else { return }
+        fitScheduled = true
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            fitScheduled = false
+            guard let panel, panel.isVisible else { return }
+            place(panel)
+        }
     }
 
     func windowDidMove(_ notification: Notification) {

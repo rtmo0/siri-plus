@@ -366,7 +366,7 @@ final class MeetingModel: ObservableObject {
             } catch is CancellationError {
                 self?.finishHint(hint.id, failure: nil)
             } catch {
-                self?.finishHint(hint.id, failure: error.localizedDescription)
+                self?.finishHint(hint.id, failure: ModelErrorReport(error).compactText)
             }
         }
     }

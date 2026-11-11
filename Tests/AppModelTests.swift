@@ -85,15 +85,29 @@ struct AppModelTests {
         #expect(!model.isReplying)
     }
 
-    @Test func failedReplyShowsError() async throws {
+    @Test func failedReplyStaysInTheConversationAndCanBeRetried() async throws {
         let service = ControlledAssistant()
         let model = makeModel(assistant: service)
         let task = try #require(model.send("Вопрос"))
         await service.waitForRequest()
-        service.fail(ClaudeError.missingAPIKey)
+        service.fail(ClaudeError.http(status: 529, message: "Overloaded", body: #"{"type":"error","error":{"type":"overloaded_error","message":"Overloaded"}}"#))
         await task.value
-        #expect(model.errorMessage?.contains("API key") == true)
+        // Not a banner over the window: the failure sits where the answer would be.
+        #expect(model.errorMessage == nil)
+        let failure = try #require(model.replyFailure)
+        #expect(failure.code == "HTTP 529")
+        #expect(failure.body?.contains("overloaded_error") == true)
+        #expect(failure.modelTitle != nil)
         #expect(model.messages.count == 1)
+
+        // Retrying asks again with the same question and clears the card.
+        let retry = try #require(model.retryReply())
+        #expect(model.replyFailure == nil)
+        await service.waitForRequest()
+        service.complete("Ответ")
+        await retry.value
+        #expect(model.messages.map(\.role) == [.user, .assistant])
+        #expect(model.retryReply() == nil)
     }
 
     @Test func snapshotIsSentWithNextMessageOnly() async throws {

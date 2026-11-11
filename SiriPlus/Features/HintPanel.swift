@@ -380,13 +380,16 @@ private struct SidePanelView: View {
 
     @ViewBuilder
     private var conversation: some View {
-        if !model.messages.isEmpty || model.isReplying || voice.errorMessage != nil {
+        if !model.messages.isEmpty || model.isReplying || voice.errorMessage != nil || model.replyFailure != nil {
             Divider().padding(.horizontal, 14)
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 12) {
                         ForEach(model.messages) { message in
                             PanelMessage(message: message)
+                        }
+                        if let failure = model.replyFailure, !model.isReplying {
+                            ModelErrorCard(report: failure, compact: true) { model.retryReply() }
                         }
                         if model.isReplying {
                             if model.partialReply.isEmpty {

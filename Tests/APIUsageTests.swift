@@ -85,6 +85,40 @@ struct APIUsageTests {
     }
 }
 
+struct ModelErrorReportTests {
+    @Test func httpFailuresKeepTheirCodeAndResponse() {
+        let report = ModelErrorReport(ClaudeError.http(status: 401, message: "invalid x-api-key", body: "{\n  \"error\" : \"invalid x-api-key\"\n}"), modelTitle: "Claude Opus 5.5")
+        #expect(report.code == "HTTP 401")
+        #expect(report.body?.contains("invalid x-api-key") == true)
+        #expect(report.fullText.contains("Claude Opus 5.5"))
+        #expect(report.fullText.contains("HTTP 401"))
+        #expect(report.compactText.hasSuffix("(HTTP 401)"))
+    }
+
+    @Test func otherFailuresGetWhatTheyHave() {
+        let network = ModelErrorReport(URLError(.notConnectedToInternet))
+        #expect(network.code == "URLError -1009")
+        let cli = ModelErrorReport(ClaudeCodeError.exited(message: "Claude Code exited with code 1.", code: "exit 1", output: "boom"))
+        #expect(cli.code == "exit 1")
+        #expect(cli.body == "boom")
+        // Siri+'s own errors say everything in the summary.
+        let own = ModelErrorReport(OpenAIError.missingAPIKey)
+        #expect(own.code == nil)
+        #expect(own.body == nil)
+        // A body that only repeats the summary is not shown twice.
+        #expect(ModelErrorReport(summary: "Same", body: " Same ").body == nil)
+    }
+
+    @Test func claudeCodeResultErrorsKeepTheEvent() {
+        var decoder = ClaudeCodeStreamDecoder()
+        let line = #"{"type":"result","subtype":"error_during_execution","is_error":true,"api_error_status":429,"result":"Rate limited"}"#
+        _ = decoder.consume(line: line)
+        #expect(decoder.resultError == "Rate limited")
+        #expect(decoder.resultErrorCode == "429")
+        #expect(decoder.resultErrorLine == line)
+    }
+}
+
 @MainActor
 struct MaterialTests {
     @Test func textFilesAreAddedToTheNotes() async throws {

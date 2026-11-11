@@ -192,7 +192,7 @@ struct ChatCompletionsClient: Sendable {
     private func get(_ path: String) async throws -> Data {
         let (data, response) = try await session.data(for: request(path))
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        guard status == 200 else { throw ClaudeError.http(status: status, message: ClaudeClient.errorMessage(from: data)) }
+        guard status == 200 else { throw ClaudeError.http(status: status, message: ClaudeClient.errorMessage(from: data), body: ClaudeClient.responseBody(data)) }
         return data
     }
 
@@ -232,7 +232,7 @@ struct ChatCompletionsClient: Sendable {
             if http.statusCode == 402, flavor == .deepSeek { throw DeepSeekError.insufficientBalance }
             var raw = Data()
             for try await byte in bytes { raw.append(byte) }
-            throw ClaudeError.http(status: http.statusCode, message: ClaudeClient.errorMessage(from: raw))
+            throw ClaudeError.http(status: http.statusCode, message: ClaudeClient.errorMessage(from: raw), body: ClaudeClient.responseBody(raw))
         }
         var decoder = ChatCompletionsStreamDecoder()
         for try await line in bytes.lines {

@@ -1067,6 +1067,16 @@
         }
       }
     },
+    "Code: %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Код: %@"
+          }
+        }
+      }
+    },
     "Connect a server under Settings → Model → Other.": {
       "localizations": {
         "ru": {
@@ -1087,6 +1097,16 @@
         }
       }
     },
+    "Copy": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скопировать"
+          }
+        }
+      }
+    },
     "Copy the Chat": {
       "localizations": {
         "ru": {
@@ -1103,6 +1123,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Скопировать чат в Markdown"
+          }
+        }
+      }
+    },
+    "Copy the error with its code and response": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Скопировать ошибку с кодом и ответом сервиса"
           }
         }
       }
@@ -2147,6 +2177,26 @@
         }
       }
     },
+    "Model access error": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ошибка доступа к модели"
+          }
+        }
+      }
+    },
+    "Model: %@": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Модель: %@"
+          }
+        }
+      }
+    },
     "Models": {
       "localizations": {
         "ru": {
@@ -2233,16 +2283,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Новые версии берутся из релизов на GitHub. Siri+ живёт в строке меню, а не в Доке."
-          }
-        }
-      }
-    },
-    "No answer: %@": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ответ не получен: %@"
           }
         }
       }
@@ -2867,6 +2907,16 @@
         }
       }
     },
+    "Response": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ответ сервиса"
+          }
+        }
+      }
+    },
     "Save": {
       "localizations": {
         "ru": {
@@ -3253,16 +3303,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Вход не завершён. Подробности — в Siri+."
-          }
-        }
-      }
-    },
-    "Sign-in required": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Нужно войти"
           }
         }
       }
@@ -4147,6 +4187,16 @@
         }
       }
     },
+    "Try Again": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Повторить"
+          }
+        }
+      }
+    },
     "Turn off to take screenshots or record the hint panel. While it is off, people you share your screen with see the hints too.": {
       "localizations": {
         "ru": {
@@ -4393,6 +4443,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "по умолчанию"
+          }
+        }
+      }
+    },
+    "exit %d": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "код выхода %d"
           }
         }
       }

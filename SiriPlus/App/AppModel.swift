@@ -143,6 +143,8 @@ final class AppModel: ObservableObject {
         didSet { syncCatalog() }
     }
     @Published private(set) var isSigningIn = false
+    /// Why the last answer did not come; shown in the conversation, cleared by the next question.
+    @Published private(set) var replyFailure: ModelErrorReport?
     /// The provider whose new key is being checked before it is saved.
     @Published private(set) var checkingNewKey: AIProvider?
     /// Why a new key was not saved, per provider.
@@ -272,6 +274,20 @@ final class AppModel: ObservableObject {
         clearSnapshot()
         pendingAttachments = []
         saveChat()
+        return requestReply()
+    }
+
+    /// Asks the model again after a failed answer, with the same question.
+    @discardableResult
+    func retryReply() -> Task<Void, Never>? {
+        guard !isReplying, messages.last?.role == .user else { return nil }
+        return requestReply()
+    }
+
+    /// Streams the model's answer to the conversation as it stands. A failure stays in the conversation as
+    /// an error card with the code and the service's response, until the next question or a retry.
+    private func requestReply() -> Task<Void, Never>? {
+        replyFailure = nil
         isReplying = true
         partialReply = ""
         let requestID = UUID()
@@ -289,7 +305,7 @@ final class AppModel: ObservableObject {
             }
             guard let self, self.activeReplyID == requestID else { return }
             if let failure, !(failure is CancellationError) {
-                self.errorMessage = String(localized: "No answer: \(failure.localizedDescription)")
+                self.replyFailure = ModelErrorReport(failure, modelTitle: self.title(of: self.preferences.model(for: .chat)))
             }
             self.finishReply()
         }
@@ -310,6 +326,7 @@ final class AppModel: ObservableObject {
         pendingAttachments = []
         clearSnapshot()
         errorMessage = nil
+        replyFailure = nil
         selectedTab = .chat
     }
 
@@ -324,6 +341,7 @@ final class AppModel: ObservableObject {
         pendingAttachments = []
         clearSnapshot()
         errorMessage = nil
+        replyFailure = nil
         selectedTab = .chat
     }
 
@@ -512,7 +530,7 @@ final class AppModel: ObservableObject {
                 accounts.customModels = try await credentials.customModels(base, key.isEmpty ? nil : key)
             }
             return .valid
-        } catch ClaudeError.http(status: 401, _) {
+        } catch ClaudeError.http(status: 401, _, _) {
             let message = provider == .custom
                 ? String(localized: "The server did not accept the key. Check it, or leave the field empty for a server without one.")
                 : String(localized: "\(provider.title) did not accept this key. Check that it is copied in full and not revoked.")

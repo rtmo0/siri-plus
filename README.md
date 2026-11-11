@@ -85,6 +85,7 @@ Tell participants you use an assistant: recording a conversation without consent
 - The panel sits in the top-right corner with the same margin as widgets. Drag it by any empty area; the place is remembered.
 - Attach files with the paperclip, drag and drop, or ⌘V: a copied screenshot or picture is attached as an image, files copied in Finder as files; text pastes as usual. Images go to the model as images; PDF, text and code are read on the Mac; audio and video are transcribed on the Mac and only the transcript is sent. Telegram voice notes (OGG/Opus) need converting first.
 - The input grows up to 13 lines, then scrolls. Return sends, Shift-Return adds a line.
+- When the model cannot answer (no connection, a refused key, a limit, a server error), the chat and the panel show “Model access error” where the answer would be: the model, the error code (HTTP status, network error or Claude Code's exit code) and the service's whole response, with Try Again and Copy. Failed hints and summaries say the same in their own cards.
 
 ## Models and sign-in
 

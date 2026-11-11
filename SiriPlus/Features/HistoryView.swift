@@ -234,6 +234,7 @@ private struct MeetingDetail: View {
             if let failure = history.summaryFailures[record.id] {
                 Label(failure, systemImage: "exclamationmark.triangle")
                     .foregroundStyle(.orange)
+                    .textSelection(.enabled)
             } else if record.summary.isEmpty {
                 Text(isSummarizing ? "Writing the summary…" : "No summary yet.")
                     .foregroundStyle(.secondary)

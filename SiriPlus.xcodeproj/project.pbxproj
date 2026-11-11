@@ -246,6 +246,16 @@
 			"isa" = "PBXBuildFile";
 			"fileRef" = "508274BC523D07530772295A";
 		};
+		"1AB88357A405FC47A9F390A1" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Features/ModelErrorCard.swift";
+			"sourceTree" = "<group>";
+		};
+		"544FB6D823379AAB7B277E5D" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "1AB88357A405FC47A9F390A1";
+		};
 		"1F827803CFC784E1C7C5E1B6" = {
 			"isa" = "PBXFileReference";
 			"lastKnownFileType" = "sourcecode.swift";
@@ -425,6 +435,16 @@
 		"07BC4C0D86A7EC65A251E963" = {
 			"isa" = "PBXBuildFile";
 			"fileRef" = "9BB832DF39D3AC078F543D59";
+		};
+		"F21868602FC309B6E8591ABA" = {
+			"isa" = "PBXFileReference";
+			"lastKnownFileType" = "sourcecode.swift";
+			"path" = "Models/ModelErrorReport.swift";
+			"sourceTree" = "<group>";
+		};
+		"0816936BDCFD65E81E9CBA07" = {
+			"isa" = "PBXBuildFile";
+			"fileRef" = "F21868602FC309B6E8591ABA";
 		};
 		"AFD89493C1F9FA88F247BE5F" = {
 			"isa" = "PBXFileReference";
@@ -755,6 +775,7 @@
 				"21DD833FFC8953E6537B2BD1",
 				"623B64823DCD400B6791B4FD",
 				"508274BC523D07530772295A",
+				"1AB88357A405FC47A9F390A1",
 				"1F827803CFC784E1C7C5E1B6",
 				"6249697D64361FA73D25DF22",
 				"33671CEA8B843F3DDF1342F0",
@@ -773,6 +794,7 @@
 				"2F2FBACD0111C6ED289DEEEE",
 				"F28A9F1EFFFC674966895D4F",
 				"9BB832DF39D3AC078F543D59",
+				"F21868602FC309B6E8591ABA",
 				"AFD89493C1F9FA88F247BE5F",
 				"E8711DDBCD93419757EB9D98",
 				"E0B31FE2D18C569B32CBA594",
@@ -942,6 +964,7 @@
 				"77E2EA81BAD7CF13CC702E85",
 				"64DB74865FDFBF88B712438D",
 				"0D430400ED0110FD3B5B83FF",
+				"544FB6D823379AAB7B277E5D",
 				"DAE9CE84592BD07D82662B8F",
 				"D085F9CE04CB8D3A7B76A002",
 				"1DD56C66FDD57C829572BD46",
@@ -960,6 +983,7 @@
 				"D3736A04246A1F615D44E64C",
 				"5EA8EA43169458768792064D",
 				"07BC4C0D86A7EC65A251E963",
+				"0816936BDCFD65E81E9CBA07",
 				"47BD48CA845A5AAA7F48373A",
 				"852456FF9BFD1D4CAB567470",
 				"F7FF3D1694F5FA86CAD5B352",
@@ -1078,7 +1102,7 @@
 				"INFOPLIST_FILE" = "SiriPlus/Resources/Info.plist";
 				"CODE_SIGN_ENTITLEMENTS" = "SiriPlus/Resources/SiriPlus.entitlements";
 				"GENERATE_INFOPLIST_FILE" = "NO";
-				"MARKETING_VERSION" = "0.6.1";
+				"MARKETING_VERSION" = "0.6.2";
 				"CURRENT_PROJECT_VERSION" = "1";
 				"CODE_SIGN_IDENTITY" = "-";
 				"CODE_SIGN_STYLE" = "Manual";
@@ -1103,7 +1127,7 @@
 				"INFOPLIST_FILE" = "SiriPlus/Resources/Info.plist";
 				"CODE_SIGN_ENTITLEMENTS" = "SiriPlus/Resources/SiriPlus.entitlements";
 				"GENERATE_INFOPLIST_FILE" = "NO";
-				"MARKETING_VERSION" = "0.6.1";
+				"MARKETING_VERSION" = "0.6.2";
 				"CURRENT_PROJECT_VERSION" = "1";
 				"CODE_SIGN_IDENTITY" = "-";
 				"CODE_SIGN_STYLE" = "Manual";
@@ -1137,7 +1161,7 @@
 				"INFOPLIST_FILE" = "SiriPlusWidget/Info.plist";
 				"CODE_SIGN_ENTITLEMENTS" = "SiriPlusWidget/SiriPlusWidget.entitlements";
 				"GENERATE_INFOPLIST_FILE" = "NO";
-				"MARKETING_VERSION" = "0.6.1";
+				"MARKETING_VERSION" = "0.6.2";
 				"CURRENT_PROJECT_VERSION" = "1";
 				"CODE_SIGN_IDENTITY" = "-";
 				"CODE_SIGN_STYLE" = "Manual";
@@ -1164,7 +1188,7 @@
 				"INFOPLIST_FILE" = "SiriPlusWidget/Info.plist";
 				"CODE_SIGN_ENTITLEMENTS" = "SiriPlusWidget/SiriPlusWidget.entitlements";
 				"GENERATE_INFOPLIST_FILE" = "NO";
-				"MARKETING_VERSION" = "0.6.1";
+				"MARKETING_VERSION" = "0.6.2";
 				"CURRENT_PROJECT_VERSION" = "1";
 				"CODE_SIGN_IDENTITY" = "-";
 				"CODE_SIGN_STYLE" = "Manual";

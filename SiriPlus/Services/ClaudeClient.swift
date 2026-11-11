@@ -2,7 +2,8 @@ import Foundation
 
 enum ClaudeError: LocalizedError, Equatable {
     case missingAPIKey
-    case http(status: Int, message: String)
+    /// `message` is the error text the service gave; `body` is its whole response, for the error card.
+    case http(status: Int, message: String, body: String = "")
     case api(type: String, message: String)
     case refused
     case invalidResponse
@@ -11,11 +12,11 @@ enum ClaudeError: LocalizedError, Equatable {
         switch self {
         case .missingAPIKey:
             String(localized: "Add an API key in Settings.")
-        case .http(401, _):
+        case .http(401, _, _):
             String(localized: "The API key was not accepted. Check it in Settings.")
-        case .http(429, _):
+        case .http(429, _, _):
             String(localized: "Too many requests or the usage limit is reached. Wait a little.")
-        case .http(let status, let message):
+        case .http(let status, let message, _):
             String(localized: "The service returned error \(status): \(message)")
         case .api(let type, let message):
             "\(message) (\(type))"
@@ -176,7 +177,7 @@ struct ClaudeClient: Sendable {
         request.setValue(Self.apiVersion, forHTTPHeaderField: "anthropic-version")
         let (data, response) = try await session.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        guard status == 200 else { throw ClaudeError.http(status: status, message: Self.errorMessage(from: data)) }
+        guard status == 200 else { throw ClaudeError.http(status: status, message: Self.errorMessage(from: data), body: Self.responseBody(data)) }
         return try Self.parseModels(data)
     }
 
@@ -215,7 +216,7 @@ struct ClaudeClient: Sendable {
                     guard http.statusCode == 200 else {
                         var raw = Data()
                         for try await byte in bytes { raw.append(byte) }
-                        throw ClaudeError.http(status: http.statusCode, message: Self.errorMessage(from: raw))
+                        throw ClaudeError.http(status: http.statusCode, message: Self.errorMessage(from: raw), body: Self.responseBody(raw))
                     }
 
                     var decoder = ClaudeStreamDecoder()
@@ -235,6 +236,17 @@ struct ClaudeClient: Sendable {
             }
             continuation.onTermination = { _ in task.cancel() }
         }
+    }
+
+    /// The whole response for the error card: JSON pretty-printed, at most a few thousand characters.
+    static func responseBody(_ data: Data) -> String {
+        if let object = try? JSONSerialization.jsonObject(with: data),
+           let pretty = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .withoutEscapingSlashes]),
+           let text = String(data: pretty, encoding: .utf8) {
+            return String(text.prefix(4_000))
+        }
+        let text = String(decoding: data.prefix(4_000), as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        return text
     }
 
     static func errorMessage(from data: Data) -> String {

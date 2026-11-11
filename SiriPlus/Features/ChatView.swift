@@ -52,6 +52,10 @@ struct ChatView: View {
                             MessageRow(message: message, showTimestamp: model.preferences.showTimestamps)
                                 .id(message.id)
                         }
+                        if let failure = model.replyFailure, !model.isReplying {
+                            ModelErrorCard(report: failure) { model.retryReply() }
+                                .padding(.leading, 30)
+                        }
                         if model.isReplying {
                             if model.partialReply.isEmpty {
                                 ProgressView().controlSize(.small).padding(.leading, 30)

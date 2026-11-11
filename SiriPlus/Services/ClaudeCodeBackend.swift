@@ -5,6 +5,8 @@ enum ClaudeCodeError: LocalizedError, Equatable {
     case notInstalled
     case notSignedIn
     case failed(String)
+    /// The CLI failed: its exit code or the error kind it reported, and its raw output for the error card.
+    case exited(message: String, code: String, output: String)
 
     var errorDescription: String? {
         switch self {
@@ -12,7 +14,7 @@ enum ClaudeCodeError: LocalizedError, Equatable {
             String(localized: "Claude Code is not installed. Install it from code.claude.com, then sign in in Settings.")
         case .notSignedIn:
             String(localized: "Sign in to your Claude account in Settings.")
-        case .failed(let message):
+        case .failed(let message), .exited(let message, _, _):
             message
         }
     }
@@ -246,18 +248,22 @@ struct ClaudeCodeBackend: ModelBackend {
             process.waitUntilExit()
             try Task.checkCancellation()
             if let error = decoder.resultError {
-                throw Self.normalize(error)
+                throw Self.normalize(error, code: decoder.resultErrorCode, output: decoder.resultErrorLine ?? error)
             }
             if process.terminationStatus != 0 {
                 let stderr = String(data: errors.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
-                throw Self.normalize(stderr.isEmpty ? "Claude Code exited with code \(process.terminationStatus)." : stderr)
+                throw Self.normalize(stderr.isEmpty ? "Claude Code exited with code \(process.terminationStatus)." : stderr,
+                                     code: String(localized: "exit \(process.terminationStatus)"), output: stderr)
             }
         } onCancel: {
             process.terminate()
         }
     }
 
-    static func normalize(_ message: String) -> ClaudeCodeError {
+    /// - Parameters:
+    ///   - code: the exit code or the error kind, kept for the error card.
+    ///   - output: the CLI's raw output for the error card.
+    static func normalize(_ message: String, code: String? = nil, output: String? = nil) -> ClaudeCodeError {
         let text = message.replacingOccurrences(of: "\u{1B}\\[[0-9;]*m", with: "", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let lowered = text.lowercased()
@@ -265,9 +271,11 @@ struct ClaudeCodeBackend: ModelBackend {
             return .notSignedIn
         }
         if lowered.contains("usage limit") || lowered.contains("rate limit") || lowered.contains("limit reached") {
-            return .failed(String(localized: "The Claude account usage limit is reached. Try later or choose another model."))
+            let limit = String(localized: "The Claude account usage limit is reached. Try later or choose another model.")
+            return code.map { .exited(message: limit, code: $0, output: String((output ?? text).prefix(4_000))) } ?? .failed(limit)
         }
-        return .failed(String(text.prefix(1_000)))
+        let short = String(text.prefix(1_000))
+        return code.map { .exited(message: short, code: $0, output: String((output ?? text).prefix(4_000))) } ?? .failed(short)
     }
 
     private static func signInEnvironment() -> [String: String] {
@@ -306,6 +314,9 @@ struct ClaudeCodeBackend: ModelBackend {
 struct ClaudeCodeStreamDecoder {
     private var sawPartialText = false
     private(set) var resultError: String?
+    /// The failed result event as it arrived, and the API status or error kind it reports.
+    private(set) var resultErrorLine: String?
+    private(set) var resultErrorCode: String?
 
     /// Returns new reply text carried by the line, if any.
     mutating func consume(line: String) -> String? {
@@ -323,6 +334,9 @@ struct ClaudeCodeStreamDecoder {
             if object["is_error"] as? Bool == true || (object["subtype"] as? String).map({ $0 != "success" }) == true {
                 resultError = (object["result"] as? String).flatMap { $0.isEmpty ? nil : $0 }
                     ?? String(localized: "Claude Code could not complete the request.")
+                resultErrorLine = line
+                resultErrorCode = (object["api_error_status"] as? NSNumber).map { "\($0)" }
+                    ?? (object["subtype"] as? String) ?? "error"
                 return nil
             }
             // Without partial messages the whole reply arrives only here.

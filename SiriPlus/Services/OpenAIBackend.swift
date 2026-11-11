@@ -124,7 +124,7 @@ struct ResponsesClient: Sendable {
         guard http.statusCode == 200 else {
             var raw = Data()
             for try await byte in bytes { raw.append(byte) }
-            throw ClaudeError.http(status: http.statusCode, message: ClaudeClient.errorMessage(from: raw))
+            throw ClaudeError.http(status: http.statusCode, message: ClaudeClient.errorMessage(from: raw), body: ClaudeClient.responseBody(raw))
         }
         var decoder = ResponsesStreamDecoder()
         for try await line in bytes.lines {
@@ -155,7 +155,7 @@ struct OpenAIAPIBackend: ModelBackend {
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         let (data, response) = try await session.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        guard status == 200 || status == 403 else { throw ClaudeError.http(status: status, message: ClaudeClient.errorMessage(from: data)) }
+        guard status == 200 || status == 403 else { throw ClaudeError.http(status: status, message: ClaudeClient.errorMessage(from: data), body: ClaudeClient.responseBody(data)) }
     }
 
     func stream(_ prompt: PreparedPrompt, model: String) -> AsyncThrowingStream<String, Error> {
@@ -198,7 +198,7 @@ struct ChatGPTAccountBackend: ModelBackend {
                     let body = ResponsesRequest(prompt: prompt, model: model)
                     do {
                         try await account.client().streamText(body) { continuation.yield($0) }
-                    } catch ClaudeError.http(status: 401, _) {
+                    } catch ClaudeError.http(status: 401, _, _) {
                         // The access token may have been revoked early; refresh once and retry.
                         try await account.refresh()
                         try await account.client().streamText(body) { continuation.yield($0) }

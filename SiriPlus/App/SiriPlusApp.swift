@@ -114,11 +114,6 @@ private struct AssistantMenu: View {
             Button("Stop Meeting") { afterMenuCloses { Task { await meeting.stop() } } }
         }
         Divider()
-        if model.isModelReady {
-            Text("\(model.providerName) connected")
-        } else {
-            Text("Sign-in required")
-        }
         Button("Settings…") {
             afterMenuCloses {
                 model.selectedTab = .settings

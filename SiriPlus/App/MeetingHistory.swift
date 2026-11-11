@@ -105,7 +105,7 @@ final class MeetingHistory: ObservableObject {
                     if $0.participants.isEmpty { $0.participants = summary.participants }
                 }
             } catch {
-                self?.summaryFailures[id] = error.localizedDescription
+                self?.summaryFailures[id] = ModelErrorReport(error).fullText
             }
             self?.summarizing.remove(id)
         }

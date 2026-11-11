@@ -132,9 +132,9 @@ struct MeetingView: View {
                     Spacer(minLength: 0)
                     if showsSignIn {
                         HStack(spacing: 8) {
-                            Label("Without a signed-in model the transcript works, but hints don’t.", systemImage: "person.badge.key")
+                            Label("Without a connected model for hints the transcript works, but hints don’t.", systemImage: "person.badge.key")
                                 .lineLimit(1)
-                            Button("Sign In", action: openSettings)
+                            Button("Set Up a Model", action: openSettings)
                                 .buttonStyle(.glassProminent)
                                 .controlSize(.small)
                         }

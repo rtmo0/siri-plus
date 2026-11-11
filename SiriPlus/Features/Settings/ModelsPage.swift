@@ -23,20 +23,34 @@ struct ModelsPage: View {
 
     private var modelsSection: some View {
         Section {
+            if preferences.models.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("No models yet")
+                        .font(.headline)
+                    Text("Add the model Siri+ should answer with: Claude or ChatGPT by subscription, a model with an API key, DeepSeek or a local one.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(.vertical, 4)
+            }
             ForEach(preferences.models) { profile in
                 ModelRow(model: model, profile: profile) { editing = profile }
                     .contextMenu {
                         Button("Edit…") { editing = profile }
                         Button("Delete", role: .destructive) { model.preferences.remove(profile.id) }
-                            .disabled(preferences.models.count == 1)
                     }
             }
             HStack {
                 Spacer()
-                Button("Add Model…", systemImage: "plus") {
-                    editing = ModelProfile(provider: .claude, model: ModelProfile.defaultModel(for: .claudeCode))
+                let add = { editing = ModelProfile(provider: .claude, model: ModelProfile.defaultModel(for: .claudeCode)) }
+                if preferences.models.isEmpty {
+                    Button("Add Model…", systemImage: "plus", action: add)
+                        .buttonStyle(.glassProminent)
+                } else {
+                    Button("Add Model…", systemImage: "plus", action: add)
+                        .buttonStyle(.glass)
                 }
-                .buttonStyle(.glass)
             }
         } header: {
             Label("Models", systemImage: "sparkles")
@@ -47,7 +61,9 @@ struct ModelsPage: View {
 
     // MARK: Routes
 
+    @ViewBuilder
     private var routesSection: some View {
+        if !preferences.models.isEmpty {
         Section {
             ForEach(ModelPurpose.allCases) { purpose in
                 Picker(selection: routeBinding(purpose)) {
@@ -57,12 +73,11 @@ struct ModelsPage: View {
                 } label: {
                     Label(purpose.title, systemImage: purpose.symbol)
                 }
-                let profile = preferences.model(for: purpose)
-                if !model.isReady(profile) {
+                if let profile = preferences.model(for: purpose), !model.isReady(profile) {
                     Label("\(model.title(of: profile)) is not connected yet: open it in the list above to sign in or add its key.", systemImage: "exclamationmark.triangle.fill")
                         .font(.caption)
                         .foregroundStyle(.orange)
-                } else if purpose == .hints, Self.slowEfforts.contains(profile.effort) {
+                } else if purpose == .hints, let profile = preferences.model(for: purpose), Self.slowEfforts.contains(profile.effort) {
                     Label("This model thinks long (\(ModelEffort.title(profile.effort))): hints may come late. Automatic keeps them brief.", systemImage: "tortoise")
                         .font(.caption)
                         .foregroundStyle(.orange)
@@ -73,13 +88,14 @@ struct ModelsPage: View {
         } footer: {
             Footnote("Hints have to arrive within seconds: a fast model with little or no thinking works best, such as Claude Haiku or DeepSeek Flash without thinking. A model’s “Automatic” effort keeps hints brief and thinks longer on detailed answers.")
         }
+        }
     }
 
     private static let slowEfforts: Set<String> = ["high", "xhigh", "max", "ultra"]
 
     private func routeBinding(_ purpose: ModelPurpose) -> Binding<UUID> {
         Binding(
-            get: { model.preferences.model(for: purpose).id },
+            get: { model.preferences.model(for: purpose)?.id ?? UUID() },
             set: { model.preferences.routes[purpose] = $0 }
         )
     }

@@ -25,8 +25,7 @@ struct SiriPlusApp: App {
         AppDelegate.openURL = { url in
             switch url.host() {
             case "ask":
-                overlay.show()
-                if !model.voice.isListening { Task { await model.toggleDictation() } }
+                overlay.ask()
             case "meeting":
                 Task { await startMeeting(model: model, overlay: overlay) }
             case "updates":
@@ -89,10 +88,7 @@ private struct AssistantMenu: View {
 
     var body: some View {
         Button("Ask (⌃⌥Space)") {
-            afterMenuCloses {
-                overlay.show()
-                if model.preferences.dictatesOnShortcut, !model.voice.isListening { Task { await model.toggleDictation() } }
-            }
+            afterMenuCloses { overlay.ask() }
         }
         Button("New Chat") {
             afterMenuCloses {

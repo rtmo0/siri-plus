@@ -186,7 +186,7 @@ struct ChatView: View {
                 if model.isModelReady {
                     Text("Ask anything, or take a screenshot and I’ll look at it.")
                 } else {
-                    Text("To get answers, sign in to Claude or ChatGPT in Settings.")
+                    Text("To get answers, add a model in Settings → Models and sign in or add its key.")
                 }
             }
             .font(.callout)

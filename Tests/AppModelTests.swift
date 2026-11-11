@@ -85,6 +85,18 @@ struct AppModelTests {
         #expect(!model.isReplying)
     }
 
+    @Test func aFreshInstallHasNoModelAndSaysSo() async throws {
+        #expect(AssistantPreferences().models.isEmpty)
+        let model = makeModel()
+        model.preferences.models = []
+        #expect(!model.isModelReady)
+        #expect(!model.isHintModelReady)
+        #expect(model.send("Вопрос") == nil)
+        #expect(model.messages.count == 1)
+        #expect(model.replyFailure == .noModel(for: .chat))
+        #expect(!model.isReplying)
+    }
+
     @Test func failedReplyStaysInTheConversationAndCanBeRetried() async throws {
         let service = ControlledAssistant()
         let model = makeModel(assistant: service)
@@ -257,7 +269,7 @@ struct AppModelTests {
         #expect(model.accounts.keys[.custom] == .valid)
         #expect(model.preferences.customBaseURL == "http://localhost:11434/v1")
         #expect(model.accounts.customModels.map(\.id) == ["qwen3"])
-        #expect(model.providerName == "Ollama")
+        #expect(model.preferences.providerName(.custom) == "Ollama")
         #expect(model.isModelReady)
         #expect(try key.read() == nil)
 
@@ -273,29 +285,31 @@ struct AppModelTests {
         let chat = ModelProfile(provider: .claude, auth: .apiKey, model: "claude-opus-5-5", effort: "high")
         let fast = ModelProfile(provider: .deepSeek, auth: .apiKey, model: "deepseek-flash", effort: "none")
         model.preferences.models = [chat, fast]
-        #expect(model.preferences.hintSelection.route == .claudeAPI)
+        #expect(model.preferences.hintSelection?.route == .claudeAPI)
 
         model.preferences.routes[.hints] = fast.id
-        let hint = model.preferences.hintSelection
+        let hint = try #require(model.preferences.hintSelection)
         #expect(hint.route == .deepSeek)
         #expect(hint.model == "deepseek-flash")
         #expect(hint.effort == "none")
         #expect(hint.appliesEffortToHints)
         // The chat and summaries keep the first model, which has no key yet.
-        #expect(model.preferences.selection.route == .claudeAPI)
-        #expect(!model.preferences.selection.appliesEffortToHints)
-        #expect(model.preferences.selection(for: .summaries).claudeModel == "claude-opus-5-5")
+        #expect(model.preferences.selection?.route == .claudeAPI)
+        #expect(model.preferences.selection?.appliesEffortToHints == false)
+        #expect(model.preferences.selection(for: .summaries)?.claudeModel == "claude-opus-5-5")
         #expect(model.isHintModelReady)
         #expect(!model.isModelReady)
         #expect(model.preferences.purposes(of: chat) == [.chat, .summaries])
         #expect(model.preferences.purposes(of: fast) == [.hints])
 
-        // A removed model's purposes fall back to the first one; the last model cannot be removed.
+        // A removed model's purposes fall back to the first one; without models nothing is chosen.
         model.preferences.remove(fast.id)
         #expect(model.preferences.models == [chat])
         #expect(model.preferences.routes.isEmpty)
         model.preferences.remove(chat.id)
-        #expect(model.preferences.models == [chat])
+        #expect(model.preferences.models.isEmpty)
+        #expect(model.preferences.selection == nil)
+        #expect(!model.isModelReady)
     }
 
     @Test func accountsReflectClaudeCodeSignIn() async {
@@ -349,31 +363,31 @@ struct AppModelTests {
     @Test func claudeModelFromVersion03MapsToBothSignInMethods() throws {
         let key = try load(#"{"model":"claude-sonnet-5-5","claudeAuth":"apiKey"}"#)
         #expect(key.models.count == 1)
-        #expect(key.selection.route == .claudeAPI)
-        #expect(key.selection.claudeModel == "claude-sonnet-5-5")
+        #expect(key.selection?.route == .claudeAPI)
+        #expect(key.selection?.claudeModel == "claude-sonnet-5-5")
         let account = try load(#"{"model":"claude-sonnet-5-5"}"#)
-        #expect(account.selection.route == .claudeCode)
-        #expect(account.selection.claudeModel == "sonnet")
+        #expect(account.selection?.route == .claudeCode)
+        #expect(account.selection?.claudeModel == "sonnet")
     }
 
     @Test func modelsFromVersion052BecomeTheList() throws {
         // The provider in use becomes the first model.
         let plain = try load(#"{"provider":"deepSeek","deepSeekModel":"deepseek-v4-pro","claudeAuth":"apiKey"}"#)
         #expect(plain.models.map(\.provider) == [.deepSeek])
-        #expect(plain.selection.model == "deepseek-v4-pro")
+        #expect(plain.selection?.model == "deepseek-v4-pro")
         #expect(plain.routes.isEmpty)
         // A separate hint model is added and routed to hints.
         let separate = try load(#"{"provider":"claude","claudeModel":"opus","hintModel":{"provider":"deepSeek","model":"deepseek-flash","effort":"none"}}"#)
         #expect(separate.models.count == 2)
-        #expect(separate.selection.route == .claudeCode)
-        #expect(separate.hintSelection.route == .deepSeek)
-        #expect(separate.hintSelection.effort == "none")
+        #expect(separate.selection?.route == .claudeCode)
+        #expect(separate.hintSelection?.route == .deepSeek)
+        #expect(separate.hintSelection?.effort == "none")
         // Hints always thought briefly: a model with a chosen effort gets a brief copy for them.
         let deep = try load(#"{"provider":"claude","claudeModel":"opus","claudeEffort":"max"}"#)
         #expect(deep.models.count == 2)
-        #expect(deep.selection.effort == "max")
-        #expect(deep.hintSelection.effort == ModelEffort.automatic)
-        #expect(deep.hintSelection.claudeModel == "opus")
+        #expect(deep.selection?.effort == "max")
+        #expect(deep.hintSelection?.effort == ModelEffort.automatic)
+        #expect(deep.hintSelection?.claudeModel == "opus")
     }
 
     @Test func preferencesFromOlderVersionKeepTheirValues() throws {
@@ -384,9 +398,9 @@ struct AppModelTests {
         let loaded = PreferencesStore(defaults: defaults).load()
         #expect(loaded.replyStyle == .detailed)
         #expect(!loaded.showTimestamps)
-        #expect(loaded.models == [.starter])
-        #expect(loaded.selection.route == .claudeCode)
-        #expect(loaded.selection.claudeModel == "opus")
+        // Without any model keys these are fresh settings: no model until the user adds one.
+        #expect(loaded.models.isEmpty)
+        #expect(loaded.selection == nil)
         #expect(loaded.hintMode == .questionsAndTopic)
         #expect(loaded.transcriptionLocale == AssistantPreferences.systemLocale)
     }
@@ -406,7 +420,7 @@ struct AppModelTests {
             chatStore: ChatHistoryStore(url: FileManager.default.temporaryDirectory.appending(path: "chats-\(UUID().uuidString).json")),
             microphoneUsage: NoMicrophoneUsage(),
             usageLedgers: UsageLedgers(directory: nil)
-        )
+        ).withModel(.starter)
     }
 }
 
@@ -530,5 +544,13 @@ extension AssistantPreferences {
     mutating func use(_ profile: ModelProfile) {
         models = [profile]
         routes = [:]
+    }
+}
+
+extension AppModel {
+    /// The model with one model added, as most tests need.
+    func withModel(_ profile: ModelProfile) -> AppModel {
+        preferences.models = [profile]
+        return self
     }
 }

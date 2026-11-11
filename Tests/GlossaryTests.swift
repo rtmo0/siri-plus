@@ -93,7 +93,7 @@ struct GlossaryLibraryTests {
         #expect(glossary.terms.map(\.text) == ["term", "Acme Pay", "Zed"])
         #expect(FileManager.default.fileExists(atPath: imported.appending(path: "Team.txt").path))
 
-        var preferences = AssistantPreferences()
+        var preferences = AssistantPreferences(models: [.starter])
         preferences.glossaries = ["it", "file:Team"]
         preferences.customTerms = "Siri+ | сири плюс"
         #expect(library.activeTerms(preferences).map(\.text) == ["Siri+", "Kubernetes", "term", "Acme Pay", "Zed"])
@@ -125,7 +125,7 @@ struct MeetingVocabularyTests {
         let hints = ScriptedHints()
         let terms: [Glossary.Term] = [.init(text: "Kubernetes", soundsLike: ["губерни"])]
         let meeting = MeetingModel(service: service, hintService: hints, timing: timing, vocabulary: { terms }) {
-            AssistantPreferences(hintsOnOwnQuestions: own, hintMode: .questions)
+            AssistantPreferences(models: [.starter], hintsOnOwnQuestions: own, hintMode: .questions)
         }
         return (meeting, service, hints)
     }

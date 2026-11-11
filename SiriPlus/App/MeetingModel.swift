@@ -343,12 +343,22 @@ final class MeetingModel: ObservableObject {
         cancelHint()
 
         let settings = preferences()
+        guard let selection = settings.hintSelection else {
+            // Said once in the hints column, not again for every question.
+            if hints.last?.failure != ModelErrorReport.noModel(for: .hints).summary {
+                var hint = MeetingHint(id: UUID(), kind: kind, question: question, createdAt: Date())
+                hint.isStreaming = false
+                hint.failure = ModelErrorReport.noModel(for: .hints).summary
+                hints.append(hint)
+            }
+            return
+        }
         let request = HintRequest(
             trigger: trigger,
             transcript: transcript.recentText(characterLimit: 6_000),
             notes: notes,
             previousHints: hints.filter { !$0.isEmptyAnswer && $0.failure == nil }.suffix(3).map(\.text),
-            selection: settings.hintSelection,
+            selection: selection,
             vocabulary: vocabulary().promptText
         )
         let hint = MeetingHint(id: UUID(), kind: kind, question: question, createdAt: Date())

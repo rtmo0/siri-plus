@@ -123,12 +123,12 @@ struct DeepSeekTests {
     @Test func preferencesKeepTheDeepSeekChoice() throws {
         let preferences = AssistantPreferences(models: [ModelProfile(provider: .deepSeek, auth: .apiKey, model: "deepseek-v4-pro", effort: "max")])
         let decoded = try JSONDecoder().decode(AssistantPreferences.self, from: JSONEncoder().encode(preferences))
-        #expect(decoded.selection.route == .deepSeek)
-        #expect(decoded.selection.model == "deepseek-v4-pro")
-        #expect(decoded.selection.effort == "max")
+        #expect(decoded.selection?.route == .deepSeek)
+        #expect(decoded.selection?.model == "deepseek-v4-pro")
+        #expect(decoded.selection?.effort == "max")
         // A DeepSeek model without a model ID uses DeepSeek's default.
         let plain = AssistantPreferences(models: [ModelProfile(provider: .deepSeek, auth: .apiKey)])
-        #expect(plain.selection.model == ModelOption.deepSeekDefault.id)
+        #expect(plain.selection?.model == ModelOption.deepSeekDefault.id)
     }
 }
 

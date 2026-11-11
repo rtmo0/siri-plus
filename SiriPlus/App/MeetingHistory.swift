@@ -90,9 +90,13 @@ final class MeetingHistory: ObservableObject {
     /// tasks are replaced, along with their checkmarks.
     func summarize(_ id: UUID) {
         guard let record = records.first(where: { $0.id == id }), !summarizing.contains(id) else { return }
-        summarizing.insert(id)
         summaryFailures[id] = nil
-        let request = SummaryRequest(transcript: record.promptTranscript, notes: record.notes, selection: preferences().selection(for: .summaries), vocabulary: vocabulary())
+        guard let selection = preferences().selection(for: .summaries) else {
+            summaryFailures[id] = ModelErrorReport.noModel(for: .summaries).summary
+            return
+        }
+        summarizing.insert(id)
+        let request = SummaryRequest(transcript: record.promptTranscript, notes: record.notes, selection: selection, vocabulary: vocabulary())
         Task { [weak self, summaries] in
             var reply = ""
             do {

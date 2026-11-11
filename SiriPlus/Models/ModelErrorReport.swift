@@ -39,6 +39,11 @@ struct ModelErrorReport: Equatable, Sendable {
         }
     }
 
+    /// No model was added, or none does this yet.
+    static func noModel(for purpose: ModelPurpose) -> ModelErrorReport {
+        ModelErrorReport(summary: String(localized: "No model is set for “\(purpose.title)”. Add one in Settings → Models."))
+    }
+
     /// One line for a hint card or a summary: "Too many requests… (HTTP 429)".
     var compactText: String {
         code.map { "\(summary) (\($0))" } ?? summary

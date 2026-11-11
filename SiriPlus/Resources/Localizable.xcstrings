@@ -417,6 +417,16 @@
         }
       }
     },
+    "Add the model Siri+ should answer with: Claude or ChatGPT by subscription, a model with an API key, DeepSeek or a local one.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Добавьте модель, которой будет отвечать Siri+: Claude или ChatGPT по подписке, модель по API-ключу, DeepSeek или локальную."
+          }
+        }
+      }
+    },
     "Add the text of documents, pictures, audio or video to the notes. Everything is read on this Mac.": {
       "localizations": {
         "ru": {
@@ -2327,6 +2337,26 @@
         }
       }
     },
+    "No model is set for “%@”. Add one in Settings → Models.": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Для «%@» не выбрана модель. Добавьте её в «Настройки → Модели»."
+          }
+        }
+      }
+    },
+    "No models yet": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Моделей пока нет"
+          }
+        }
+      }
+    },
     "No screenshot. Check Screen Recording access in macOS settings and try again. %@": {
       "localizations": {
         "ru": {
@@ -3147,6 +3177,16 @@
         }
       }
     },
+    "Set Up a Model": {
+      "localizations": {
+        "ru": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Настроить модель"
+          }
+        }
+      }
+    },
     "Settings": {
       "localizations": {
         "ru": {
@@ -3213,16 +3253,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Показывается в строке статуса"
-          }
-        }
-      }
-    },
-    "Sign In": {
-      "localizations": {
-        "ru": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Войти"
           }
         }
       }
@@ -4107,12 +4137,12 @@
         }
       }
     },
-    "To get answers, sign in to Claude or ChatGPT in Settings.": {
+    "To get answers, add a model in Settings → Models and sign in or add its key.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Чтобы я отвечал, войди в Claude или ChatGPT в Настройках."
+            "value": "Чтобы получать ответы, добавьте модель в «Настройки → Модели» и войдите или введите её ключ."
           }
         }
       }
@@ -4367,12 +4397,12 @@
         }
       }
     },
-    "Without a signed-in model the transcript works, but hints don’t.": {
+    "Without a connected model for hints the transcript works, but hints don’t.": {
       "localizations": {
         "ru": {
           "stringUnit": {
             "state": "translated",
-            "value": "Без входа в модель расшифровка работает, а подсказки — нет."
+            "value": "Без подключённой модели для подсказок расшифровка работает, а подсказки — нет."
           }
         }
       }

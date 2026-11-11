@@ -53,7 +53,6 @@ struct ModelEditor: View {
                         model.preferences.remove(profile.id)
                         dismiss()
                     }
-                    .disabled(model.preferences.models.count == 1)
                 }
                 Spacer()
                 Button("Cancel", role: .cancel) { dismiss() }

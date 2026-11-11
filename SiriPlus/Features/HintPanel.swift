@@ -205,12 +205,19 @@ final class HintOverlay: NSObject, NSWindowDelegate {
         } else if model.voice.isListening {
             // A second press ends the spoken command right away.
             Task { await model.toggleDictation() }
-        } else if isVisible {
-            hide()
         } else {
-            show()
-            if model.preferences.dictatesOnShortcut { Task { await model.toggleDictation() } }
+            ask()
         }
+    }
+
+    /// Ask without a meeting: the panel appears already listening, and what the user says is recognized on
+    /// this Mac and sent to the chat model when they fall silent. An answer still being written is stopped,
+    /// as a new question to Siri interrupts the old one. Esc or the close button hides the panel.
+    func ask() {
+        show()
+        guard !meeting.isRunning, model.preferences.dictatesOnShortcut, !model.voice.isListening else { return }
+        if model.isReplying { model.stopReply() }
+        Task { await model.toggleDictation() }
     }
 
     private func makePanel() -> SidePanel {

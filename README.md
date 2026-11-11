@@ -60,7 +60,7 @@ xattr -dr com.apple.quarantine /Applications/SiriPlus.app
 First launch:
 
 1. The ✦ icon appears in the menu bar.
-2. Settings → Models: Claude Opus through a Claude subscription is already there; sign in, or add other models (ChatGPT, an API key, DeepSeek, a local server) and choose what each one does.
+2. Settings → Models → Add Model…: choose Claude or ChatGPT by subscription, a model with an API key, DeepSeek or a local server, sign in or add its key, and choose what each model does. A fresh install has no model until you add one.
 3. Meeting → Start. macOS asks for screen and system audio recording and for the microphone.
 
 ## Meetings
@@ -81,7 +81,7 @@ Tell participants you use an assistant: recording a conversation without consent
 
 ## Chat and the ask panel
 
-- **⌃⌥Space** in any app opens a translucent panel that starts listening right away. Speak a command; it is sent when you fall silent for 1.5 seconds. Press again to send at once.
+- **⌃⌥Space** in any app (or Ask in the menu) opens a translucent panel that starts listening right away, also when it is already open; an answer still being written is stopped. Speak a command: it is recognized on this Mac and sent to the chat model when you fall silent for 1.5 seconds. Press again to send at once; Esc or the close button hides the panel.
 - The panel sits in the top-right corner with the same margin as widgets. Drag it by any empty area; the place is remembered.
 - Attach files with the paperclip, drag and drop, or ⌘V: a copied screenshot or picture is attached as an image, files copied in Finder as files; text pastes as usual. Images go to the model as images; PDF, text and code are read on the Mac; audio and video are transcribed on the Mac and only the transcript is sent. Telegram voice notes (OGG/Opus) need converting first.
 - The input grows up to 13 lines, then scrolls. Return sends, Shift-Return adds a line.

@@ -241,11 +241,9 @@ final class AppModel: ObservableObject {
             .sink { [weak self] in self?.objectWillChange.send() }
     }
 
-    var isModelReady: Bool { accounts.isReady(preferences.selection) }
+    var isModelReady: Bool { preferences.selection.map(accounts.isReady) ?? false }
     /// Whether the model chosen for meeting hints can answer.
-    var isHintModelReady: Bool { accounts.isReady(preferences.hintSelection) }
-    /// "Claude", or the name of the connected OpenAI-compatible server.
-    var providerName: String { preferences.providerName(preferences.model(for: .chat).provider) }
+    var isHintModelReady: Bool { preferences.hintSelection.map(accounts.isReady) ?? false }
 
     /// Whether this model's sign-in, key or server is ready.
     func isReady(_ profile: ModelProfile) -> Bool {
@@ -287,12 +285,16 @@ final class AppModel: ObservableObject {
     /// Streams the model's answer to the conversation as it stands. A failure stays in the conversation as
     /// an error card with the code and the service's response, until the next question or a retry.
     private func requestReply() -> Task<Void, Never>? {
+        guard let selection = preferences.selection else {
+            replyFailure = .noModel(for: .chat)
+            return nil
+        }
         replyFailure = nil
         isReplying = true
         partialReply = ""
         let requestID = UUID()
         activeReplyID = requestID
-        let request = AssistantRequest(messages: messages, replyStyle: preferences.replyStyle, selection: preferences.selection, meeting: chatMeeting)
+        let request = AssistantRequest(messages: messages, replyStyle: preferences.replyStyle, selection: selection, meeting: chatMeeting)
         replyTask = Task { [weak self, assistant] in
             var failure: Error?
             do {
@@ -305,7 +307,7 @@ final class AppModel: ObservableObject {
             }
             guard let self, self.activeReplyID == requestID else { return }
             if let failure, !(failure is CancellationError) {
-                self.replyFailure = ModelErrorReport(failure, modelTitle: self.title(of: self.preferences.model(for: .chat)))
+                self.replyFailure = ModelErrorReport(failure, modelTitle: self.preferences.model(for: .chat).map(self.title(of:)))
             }
             self.finishReply()
         }

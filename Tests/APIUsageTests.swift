@@ -78,7 +78,7 @@ struct APIUsageTests {
         // The model routed to hints sends its own level, "no thinking" included; "Automatic" stays light.
         func routed(_ effort: String) -> ModelSelection {
             let profile = ModelProfile(provider: .deepSeek, auth: .apiKey, effort: effort)
-            return AssistantPreferences(models: [profile]).selection(for: .hints)
+            return AssistantPreferences(models: [profile]).selection(for: .hints)!
         }
         #expect(try await hint(routed("none")) == "none")
         #expect(try await hint(routed(ModelEffort.automatic)) == "low")
@@ -124,7 +124,7 @@ struct MaterialTests {
     @Test func textFilesAreAddedToTheNotes() async throws {
         let url = FileManager.default.temporaryDirectory.appending(path: "agenda-\(UUID().uuidString).txt")
         try "1. Release date\n2. Payments API".write(to: url, atomically: true, encoding: .utf8)
-        let meeting = MeetingModel(service: FakeMeetingService(), hintService: ControlledAssistant()) { AssistantPreferences() }
+        let meeting = MeetingModel(service: FakeMeetingService(), hintService: ControlledAssistant()) { AssistantPreferences(models: [.starter]) }
         meeting.notes = "Ask about the budget"
         meeting.addMaterials([url])
         #expect(meeting.readingMaterials == [url.lastPathComponent])
@@ -147,7 +147,7 @@ struct MaterialTests {
     @Test func unsupportedFilesReportAnError() async throws {
         let url = FileManager.default.temporaryDirectory.appending(path: "blob-\(UUID().uuidString).zip")
         try Data([0x50, 0x4B, 0x03, 0x04, 0xFF, 0xFE]).write(to: url)
-        let meeting = MeetingModel(service: FakeMeetingService(), hintService: ControlledAssistant()) { AssistantPreferences() }
+        let meeting = MeetingModel(service: FakeMeetingService(), hintService: ControlledAssistant()) { AssistantPreferences(models: [.starter]) }
         meeting.addMaterials([url])
         try await eventually { meeting.readingMaterials.isEmpty }
         #expect(meeting.notes.isEmpty)

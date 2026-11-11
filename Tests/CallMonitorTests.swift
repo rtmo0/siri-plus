@@ -109,7 +109,7 @@ struct CallMonitorTests {
 
     private func makeMonitor(enabled: Bool = true) -> (CallMonitor, MeetingModel, FakeMeetingService) {
         let service = FakeMeetingService()
-        let meeting = MeetingModel(service: service, hintService: ScriptedHints()) { AssistantPreferences(hintMode: .manual) }
+        let meeting = MeetingModel(service: service, hintService: ScriptedHints()) { AssistantPreferences(models: [.starter], hintMode: .manual) }
         let monitor = CallMonitor(meeting: meeting, usage: NoMicrophoneUsage()) { enabled }
         return (monitor, meeting, service)
     }

@@ -7,7 +7,7 @@ struct ChatHistoryTests {
     private let storeURL = FileManager.default.temporaryDirectory.appending(path: "siriplus-chats-\(UUID().uuidString)/chats.json")
 
     private func makeModel(assistant: ControlledAssistant, history: MeetingHistoryStore? = nil) -> AppModel {
-        AppModel(
+        let model = AppModel(
             assistant: assistant,
             meetingService: FakeMeetingService(),
             screenCapture: StubScreenCapture(),
@@ -17,6 +17,8 @@ struct ChatHistoryTests {
             chatStore: ChatHistoryStore(url: storeURL),
             microphoneUsage: NoMicrophoneUsage()
         )
+        model.preferences.models = [.starter]
+        return model
     }
 
     @Test func chatsAreSavedAndReopened() async throws {

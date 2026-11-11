@@ -51,7 +51,7 @@ struct MeetingHistoryTests {
     @Test func finishedMeetingIsSavedAndSummarized() async throws {
         let (meeting, service, hints) = makeMeeting()
         let store = temporaryStore()
-        let history = MeetingHistory(store: store, summaries: hints) { AssistantPreferences() }
+        let history = MeetingHistory(store: store, summaries: hints) { AssistantPreferences(models: [.starter]) }
         meeting.onFinish = { history.add($0) }
         hints.summaryReply = reply
 
@@ -74,7 +74,7 @@ struct MeetingHistoryTests {
 
     @Test func silentMeetingIsNotSaved() async throws {
         let (meeting, _, hints) = makeMeeting()
-        let history = MeetingHistory(store: temporaryStore(), summaries: hints) { AssistantPreferences() }
+        let history = MeetingHistory(store: temporaryStore(), summaries: hints) { AssistantPreferences(models: [.starter]) }
         meeting.onFinish = { history.add($0) }
         await meeting.start()
         await meeting.stop()
@@ -86,7 +86,7 @@ struct MeetingHistoryTests {
         let hints = ScriptedHints()
         hints.summaryReply = reply
         let store = temporaryStore()
-        let history = MeetingHistory(store: store, summaries: hints) { AssistantPreferences() }
+        let history = MeetingHistory(store: store, summaries: hints) { AssistantPreferences(models: [.starter]) }
         history.add(record())
         try await eventually { history.records[0].summary == "- Переезд в ноябре" && history.summarizing.isEmpty }
 
@@ -102,7 +102,7 @@ struct MeetingHistoryTests {
 
     @Test func deletedMeetingIsRemovedFromDisk() throws {
         let store = temporaryStore()
-        let history = MeetingHistory(store: store, summaries: ScriptedHints()) { AssistantPreferences() }
+        let history = MeetingHistory(store: store, summaries: ScriptedHints()) { AssistantPreferences(models: [.starter]) }
         history.add(record())
         history.delete(history.records[0].id)
         #expect(try store.load().isEmpty)
@@ -113,7 +113,7 @@ struct MeetingHistoryTests {
         try FileManager.default.createDirectory(at: store.url.deletingLastPathComponent(), withIntermediateDirectories: true)
         try Data("not json".utf8).write(to: store.url)
 
-        let history = MeetingHistory(store: store, summaries: ScriptedHints()) { AssistantPreferences() }
+        let history = MeetingHistory(store: store, summaries: ScriptedHints()) { AssistantPreferences(models: [.starter]) }
         #expect(history.records.isEmpty)
         #expect(history.errorMessage != nil)
         let files = try FileManager.default.contentsOfDirectory(atPath: store.url.deletingLastPathComponent().path)
@@ -124,7 +124,7 @@ struct MeetingHistoryTests {
         let hints = ScriptedHints()
         hints.summaryReply = "SUMMARY:\n- Итог\nTASKS:\n- Олег | план | пятница"
         let store = temporaryStore()
-        let history = MeetingHistory(store: store, summaries: hints) { AssistantPreferences() }
+        let history = MeetingHistory(store: store, summaries: hints) { AssistantPreferences(models: [.starter]) }
         history.add(record())
         try await eventually { history.records[0].tasks.count == 1 }
 
@@ -138,7 +138,7 @@ struct MeetingHistoryTests {
         old.title = "Старый"
         try store.save([record(endedDaysAgo: 2), old])
 
-        var preferences = AssistantPreferences()
+        var preferences = AssistantPreferences(models: [.starter])
         let history = MeetingHistory(store: store, summaries: ScriptedHints()) { preferences }
         #expect(history.records.count == 2)
 
@@ -200,7 +200,7 @@ struct MeetingHistoryTests {
         let service = FakeMeetingService()
         let hints = ScriptedHints()
         let meeting = MeetingModel(service: service, hintService: hints, timing: .init(questionDelay: .milliseconds(10))) {
-            AssistantPreferences(hintMode: .manual)
+            AssistantPreferences(models: [.starter], hintMode: .manual)
         }
         return (meeting, service, hints)
     }
@@ -337,9 +337,9 @@ struct MeetingRecordingTests {
         let hints = ScriptedHints()
         var recordsAudio = false
         let meeting = MeetingModel(service: service, hintService: hints, recordingURL: store.recordingURL(for:)) {
-            AssistantPreferences(hintMode: .manual, recordsAudio: recordsAudio)
+            AssistantPreferences(models: [.starter], hintMode: .manual, recordsAudio: recordsAudio)
         }
-        let history = MeetingHistory(store: store, summaries: hints) { AssistantPreferences() }
+        let history = MeetingHistory(store: store, summaries: hints) { AssistantPreferences(models: [.starter]) }
         meeting.onFinish = { history.add($0) }
 
         await meeting.start()

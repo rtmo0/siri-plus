@@ -232,7 +232,7 @@ struct MeetingModelTests {
         let service = FakeMeetingService()
         let hints = ScriptedHints()
         let meeting = MeetingModel(service: service, hintService: hints, timing: timing) {
-            AssistantPreferences(hintMode: mode)
+            AssistantPreferences(models: [.starter], hintMode: mode)
         }
         return (meeting, service, hints)
     }
@@ -360,7 +360,7 @@ struct DictationCandidateTests {
 
     @Test @MainActor func chosenLanguageOverridesSystemLanguages() {
         #expect(AssistantPreferences(transcriptionLocale: "ru-RU").speechLocales.map(\.identifier) == ["ru-RU"])
-        let automatic = AssistantPreferences().speechLocales
+        let automatic = AssistantPreferences(models: [.starter]).speechLocales
         #expect(!automatic.isEmpty && automatic.count <= SpeechLanguages.maximum)
     }
 

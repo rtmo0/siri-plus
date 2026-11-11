@@ -59,7 +59,7 @@ struct ModelProfile: Codable, Identifiable, Hashable, Sendable {
     /// Empty: named after the model.
     var name = ""
 
-    /// Claude Opus through the Claude Code sign-in, as a fresh install starts.
+    /// Claude Opus through the Claude Code sign-in: what Siri+ 0.5.2 and earlier used when nothing was chosen.
     static let starter = ModelProfile(id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!, provider: .claude, model: "opus")
 
     var usesAccount: Bool { provider.offersAccountSignIn && auth == .account }
@@ -153,9 +153,12 @@ struct LegacyModels: Decodable {
     private var deepSeekEffort = ModelEffort.automatic
     private var customModel = ""
     private var hint: HintChoice?
+    /// Whether the saved settings had model keys at all; a fresh install has none.
+    private(set) var isPresent = false
 
     init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: Keys.self)
+        isPresent = !container.allKeys.isEmpty
         func value<T: Decodable>(_ key: Keys, _ fallback: T) -> T { ((try? container.decodeIfPresent(T.self, forKey: key)) ?? nil) ?? fallback }
         provider = value(.provider, provider)
         // Siri+ 0.3 kept one Claude API model ID under "model" for both sign-in methods.

@@ -154,8 +154,8 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
 
     var replyStyle: ReplyStyle = .brief
     var showTimestamps = true
-    /// The models the user added, in the order Settings lists them. Never empty.
-    var models: [ModelProfile] = [.starter]
+    /// The models the user added, in the order Settings lists them. A fresh install has none.
+    var models: [ModelProfile] = []
     /// Which model does what; a purpose without a route uses the first model.
     var routes: [ModelPurpose: UUID] = [:]
     /// The "Other" provider's OpenAI-compatible server, such as "http://localhost:11434/v1"; empty when none is connected.
@@ -187,7 +187,7 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
     init(
         replyStyle: ReplyStyle = .brief,
         showTimestamps: Bool = true,
-        models: [ModelProfile] = [.starter],
+        models: [ModelProfile] = [],
         routes: [ModelPurpose: UUID] = [:],
         customBaseURL: String = "",
         customName: String = "",
@@ -206,7 +206,7 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
     ) {
         self.replyStyle = replyStyle
         self.showTimestamps = showTimestamps
-        self.models = models.isEmpty ? [.starter] : models
+        self.models = models
         self.routes = routes
         self.customBaseURL = customBaseURL
         self.customName = customName
@@ -232,12 +232,12 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         showTimestamps = try container.decodeIfPresent(Bool.self, forKey: .showTimestamps) ?? defaults.showTimestamps
         customBaseURL = try container.decodeIfPresent(String.self, forKey: .customBaseURL) ?? defaults.customBaseURL
         customName = try container.decodeIfPresent(String.self, forKey: .customName) ?? defaults.customName
-        if let models = try? container.decodeIfPresent([ModelProfile].self, forKey: .models), !models.isEmpty {
+        if let models = try? container.decodeIfPresent([ModelProfile].self, forKey: .models) {
             self.models = models
             routes = (try? container.decodeIfPresent([ModelPurpose: UUID].self, forKey: .routes)) ?? [:]
-        } else {
+        } else if let legacy = try? LegacyModels(from: decoder), legacy.isPresent {
             // Siri+ 0.5.2 and earlier kept one model per provider and an optional separate model for hints.
-            (models, routes) = try LegacyModels(from: decoder).profiles()
+            (models, routes) = legacy.profiles()
         }
         hintMode = (try? container.decodeIfPresent(HintMode.self, forKey: .hintMode)) ?? defaults.hintMode
         hintsOnOwnQuestions = try container.decodeIfPresent(Bool.self, forKey: .hintsOnOwnQuestions) ?? defaults.hintsOnOwnQuestions
@@ -255,26 +255,26 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
 
     // MARK: Models and routes
 
-    /// The model that does this; the first one when no route is set or its model was removed.
-    func model(for purpose: ModelPurpose) -> ModelProfile {
-        routes[purpose].flatMap { id in models.first { $0.id == id } } ?? models.first ?? .starter
+    /// The model that does this; the first one when no route is set or its model was removed; nil when no model was added.
+    func model(for purpose: ModelPurpose) -> ModelProfile? {
+        routes[purpose].flatMap { id in models.first { $0.id == id } } ?? models.first
     }
 
-    func selection(for purpose: ModelPurpose) -> ModelSelection {
-        var selection = model(for: purpose).selection(serverAddress: customBaseURL)
+    func selection(for purpose: ModelPurpose) -> ModelSelection? {
+        guard var selection = model(for: purpose)?.selection(serverAddress: customBaseURL) else { return nil }
         // Hints take the model's own effort; "Automatic" keeps them brief.
         selection.appliesEffortToHints = purpose == .hints
         return selection
     }
 
     /// What answers in the chat and the ask panel.
-    var selection: ModelSelection { selection(for: .chat) }
+    var selection: ModelSelection? { selection(for: .chat) }
     /// What answers live meeting hints.
-    var hintSelection: ModelSelection { selection(for: .hints) }
+    var hintSelection: ModelSelection? { selection(for: .hints) }
 
     /// The purposes a model is chosen for.
     func purposes(of profile: ModelProfile) -> [ModelPurpose] {
-        ModelPurpose.allCases.filter { model(for: $0).id == profile.id }
+        ModelPurpose.allCases.filter { model(for: $0)?.id == profile.id }
     }
 
     /// Adds a model or replaces the one with its id.
@@ -282,9 +282,8 @@ struct AssistantPreferences: Codable, Equatable, Sendable {
         if let index = models.firstIndex(where: { $0.id == profile.id }) { models[index] = profile } else { models.append(profile) }
     }
 
-    /// Removes a model unless it is the last one; its purposes fall back to the first model.
+    /// Removes a model; its purposes fall back to the first model left.
     mutating func remove(_ id: UUID) {
-        guard models.count > 1 else { return }
         models.removeAll { $0.id == id }
         routes = routes.filter { $0.value != id }
     }
